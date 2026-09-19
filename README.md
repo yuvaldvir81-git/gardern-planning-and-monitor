@@ -1,14 +1,19 @@
 # Garden Planning & Monitoring
 
-Track plant starters (seeds) from planting through harvest. Each starter has an editable
-record (species, variety, date planted, location, status) and a dated growth log so you can
-see progress over time.
+Track plant starters (seeds) from planting through harvest — either as a flat list or
+laid out as trays (a `rows × cols` grid mirroring a physical seed tray, one seed per
+cell). Every starter has a dated growth log so you can see progress over time, not just
+a single current-status field. See [docs/FEATURES.md](docs/FEATURES.md) for the full
+feature rundown, [docs/DATA_MODEL.md](docs/DATA_MODEL.md) for the schema, and
+[docs/ROADMAP.md](docs/ROADMAP.md) for what's planned/deferred next.
 
 ## Stack
 
 - Next.js (App Router) + TypeScript, Tailwind CSS, shadcn/ui
 - Postgres (Neon) via Drizzle ORM
 - Clerk for auth (multi-user, data scoped per user)
+- `.xlsx`/`.csv` import via `exceljs` + `papaparse` (not the `xlsx` package — see
+  [docs/DATA_MODEL.md](docs/DATA_MODEL.md#why-not-the-xlsx-package))
 
 ## Getting started
 
