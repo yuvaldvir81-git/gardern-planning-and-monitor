@@ -4,21 +4,19 @@ Things intentionally deferred or planned, and why.
 
 ## Seed metadata agent
 
-**Status: not started, planned next.**
+**Status: shipped.** See [FEATURES.md](./FEATURES.md#seed-metadata-agent).
 
-An agent that, given a seed type name in the bank, fills in `seed_types`' metadata
-columns — days to germinate, days to maturity, sun requirement, spacing, and general
-notes (see [DATA_MODEL.md](./DATA_MODEL.md#seed_types)). The schema already has the
-columns reserved so this doesn't need another migration.
+Resolved open questions: trigger is on-demand (a button per seed type, plus a
+"Generate N missing" batch action) on `/starters/seeds` rather than automatic or a
+background job. Source of truth is a single LLM call (`anthropic/claude-sonnet-5` via
+the AI Gateway, general knowledge, no web search/tool-use) with structured output
+validated against a Zod schema — simpler than a search step, and germination/maturity
+info for common garden plants is stable, well-known knowledge. Manual edits are
+possible from the same page for corrections.
 
-Open questions to resolve when this is built:
-- Trigger model: on-demand per seed type (a button on a future "seed bank" page) vs.
-  automatic on first use vs. a batch job over all unfilled types.
-- Source of truth: general knowledge via an LLM call (Vercel AI Gateway / AI SDK) vs.
-  a web search/tool-use step for accuracy vs. a static reference dataset.
-- Where results surface in the UI — a seed bank management page doesn't exist yet
-  (the bank currently only powers the name-field autocomplete, see
-  [FEATURES.md](./FEATURES.md#seed-type-bank--autocomplete)).
+Not done: results aren't labeled as AI-generated vs. manually edited beyond the
+`metadata_generated_at` timestamp, and regenerating silently overwrites prior manual
+edits — acceptable for v1, worth revisiting if that causes surprise data loss.
 
 ## Live Google Sheets import
 

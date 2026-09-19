@@ -59,9 +59,25 @@ names only). The name field everywhere a starter is created or renamed is a free
 combobox that suggests matches from that bank as you type, without restricting input to
 existing names.
 
-The `seed_types` table already carries metadata columns (germination days range, days
-to maturity, sun requirement, spacing) — currently unpopulated — reserved for the
-planned seed-metadata agent (see [ROADMAP.md](./ROADMAP.md)).
+## Seed metadata agent
+
+`/starters/seeds` lists the seed bank with its metadata columns (germination days
+range, days to maturity, sun requirement, spacing, notes). Each row has a Generate/
+Regenerate action (sparkle icon) that calls `anthropic/claude-sonnet-5` through the
+Vercel AI Gateway with a Zod-validated structured-output schema
+(`generatedMetadataSchema` in
+[`src/app/starters/seed-types/actions.ts`](../src/app/starters/seed-types/actions.ts))
+to fill in that one seed type from general horticultural knowledge — the model
+returns `null` for anything it isn't confident about rather than guessing. A header
+button generates every seed type that's never been generated in one pass
+(sequential, not parallel — fine at the scale of a personal seed bank). Every row is
+also manually editable (pencil icon) to correct AI output. `metadata_generated_at`
+tracks whether a row has been generated at all; regenerating overwrites prior values,
+including manual edits.
+
+Auth to the AI Gateway is automatic — Vercel injects an OIDC token for deployed
+functions, and `vercel env pull` already pulled `VERCEL_OIDC_TOKEN` into `.env.local`
+for local dev, so no separate `AI_GATEWAY_API_KEY` was needed.
 
 ## Auth & hosting
 

@@ -65,6 +65,7 @@ export const seedTypes = pgTable(
     sunRequirement: text("sun_requirement"),
     spacingCm: numeric("spacing_cm", { precision: 6, scale: 2 }),
     notes: text("notes"),
+    metadataGeneratedAt: timestamp("metadata_generated_at"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },

@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { Sprout } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
 import { getStartersForUser } from "./actions";
 import { getTraysForUser } from "./trays/actions";
@@ -13,7 +15,16 @@ export default async function StartersPage() {
         <span className="text-sm font-medium text-muted-foreground">
           Garden Planning &amp; Monitoring
         </span>
-        <UserButton />
+        <div className="flex items-center gap-4">
+          <Link
+            href="/starters/seeds"
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+          >
+            <Sprout className="h-4 w-4" />
+            Seed bank
+          </Link>
+          <UserButton />
+        </div>
       </div>
       <TraysSection trays={trays} />
       <StartersTable starters={starters} />

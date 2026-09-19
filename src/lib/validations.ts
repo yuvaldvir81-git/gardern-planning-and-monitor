@@ -70,3 +70,26 @@ export type TrayFormValues = z.infer<typeof trayFormSchema>;
 export const trayBatchFormSchema = trayFormSchema.omit({ name: true });
 
 export type TrayBatchFormValues = z.infer<typeof trayBatchFormSchema>;
+
+const optionalPositiveInt = z
+  .string()
+  .trim()
+  .optional()
+  .or(z.literal(""))
+  .refine((v) => !v || (Number.isInteger(Number(v)) && Number(v) > 0), "Must be a whole number");
+
+export const seedTypeMetadataFormSchema = z.object({
+  daysToGerminateMin: optionalPositiveInt,
+  daysToGerminateMax: optionalPositiveInt,
+  daysToMaturity: optionalPositiveInt,
+  sunRequirement: z.string().trim().max(120).optional().or(z.literal("")),
+  spacingCm: z
+    .string()
+    .trim()
+    .optional()
+    .or(z.literal(""))
+    .refine((v) => !v || !Number.isNaN(Number(v)), "Must be a number"),
+  notes: z.string().trim().max(2000).optional().or(z.literal("")),
+});
+
+export type SeedTypeMetadataFormValues = z.infer<typeof seedTypeMetadataFormSchema>;

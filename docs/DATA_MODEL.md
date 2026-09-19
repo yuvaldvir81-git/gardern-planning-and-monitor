@@ -38,9 +38,9 @@ Per-user bank of unique seed/variety names, unique on `(user_id, name)`. Every
 starter-creation path (manual add/edit, table import, tray import/edit) upserts into
 this table via `ensureSeedTypes()` — see
 [`src/app/starters/seed-types/actions.ts`](../src/app/starters/seed-types/actions.ts).
-The metadata columns below are nullable and currently unpopulated by any code path —
-they exist so the planned seed-metadata agent (see
-[ROADMAP.md](./ROADMAP.md#seed-metadata-agent)) doesn't need another migration:
+The metadata columns are nullable, filled either by the seed metadata agent or by
+hand on `/starters/seeds` (see
+[FEATURES.md](./FEATURES.md#seed-metadata-agent)):
 
 | column | intent |
 |---|---|
@@ -49,6 +49,7 @@ they exist so the planned seed-metadata agent (see
 | `sun_requirement` | free text, e.g. "full sun" |
 | `spacing_cm` | recommended spacing |
 | `notes` | free-form, e.g. agent-generated summary |
+| `metadata_generated_at` | null until the agent has generated this row at least once; regenerating overwrites all metadata columns including manual edits |
 
 ## Why not the `xlsx` package
 
