@@ -38,7 +38,7 @@ const NO_COLUMN = "__none__";
 
 type Step = "upload" | "choose-sheet" | "map" | "preview";
 
-export function ImportWizard() {
+export function ImportWizard({ onBack }: { onBack: () => void }) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<Step>("upload");
@@ -157,6 +157,9 @@ export function ImportWizard() {
             </a>
             .
           </p>
+          <Button variant="ghost" onClick={onBack}>
+            Back
+          </Button>
         </CardContent>
       </Card>
     );

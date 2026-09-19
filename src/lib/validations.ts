@@ -46,3 +46,23 @@ export const growthEntryFormSchema = z.object({
 });
 
 export type GrowthEntryFormValues = z.infer<typeof growthEntryFormSchema>;
+
+export const starterStatusColors: Record<(typeof starterStatusValues)[number], string> = {
+  seed: "bg-muted text-muted-foreground",
+  germinating: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+  seedling: "bg-lime-500/15 text-lime-600 dark:text-lime-400",
+  transplanted: "bg-sky-500/15 text-sky-600 dark:text-sky-400",
+  growing: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+  harvested: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
+  dead: "bg-destructive/15 text-destructive",
+};
+
+export const trayFormSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(120),
+  datePlanted: z.string().min(1, "Date planted is required"),
+  location: z.string().trim().max(160).optional().or(z.literal("")),
+  seedSource: z.string().trim().max(120).optional().or(z.literal("")),
+  notes: z.string().trim().max(2000).optional().or(z.literal("")),
+});
+
+export type TrayFormValues = z.infer<typeof trayFormSchema>;

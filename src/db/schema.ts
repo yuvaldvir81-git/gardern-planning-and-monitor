@@ -5,6 +5,7 @@ import {
   text,
   timestamp,
   numeric,
+  integer,
   date,
   uuid,
 } from "drizzle-orm/pg-core";
@@ -19,9 +20,26 @@ export const starterStatus = pgEnum("starter_status", [
   "dead",
 ]);
 
+export const starterTrays = pgTable("starter_trays", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  name: text("name").notNull(),
+  rows: integer("rows").notNull(),
+  cols: integer("cols").notNull(),
+  datePlanted: date("date_planted").notNull(),
+  location: text("location"),
+  seedSource: text("seed_source"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const plantStarters = pgTable("plant_starters", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").notNull(),
+  trayId: uuid("tray_id").references(() => starterTrays.id, { onDelete: "cascade" }),
+  rowIndex: integer("row_index"),
+  colIndex: integer("col_index"),
   name: text("name").notNull(),
   species: text("species"),
   variety: text("variety"),
@@ -47,8 +65,16 @@ export const growthEntries = pgTable("growth_entries", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const plantStartersRelations = relations(plantStarters, ({ many }) => ({
+export const starterTraysRelations = relations(starterTrays, ({ many }) => ({
+  starters: many(plantStarters),
+}));
+
+export const plantStartersRelations = relations(plantStarters, ({ many, one }) => ({
   growthEntries: many(growthEntries),
+  tray: one(starterTrays, {
+    fields: [plantStarters.trayId],
+    references: [starterTrays.id],
+  }),
 }));
 
 export const growthEntriesRelations = relations(growthEntries, ({ one }) => ({

@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@clerk/nextjs/server";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getDb } from "@/db";
 import { growthEntries, plantStarters } from "@/db/schema";
@@ -119,7 +119,7 @@ export async function getStartersForUser() {
   return db
     .select()
     .from(plantStarters)
-    .where(eq(plantStarters.userId, userId))
+    .where(and(eq(plantStarters.userId, userId), isNull(plantStarters.trayId)))
     .orderBy(desc(plantStarters.createdAt));
 }
 

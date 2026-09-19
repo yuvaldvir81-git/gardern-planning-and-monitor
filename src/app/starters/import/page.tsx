@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { ImportWizard } from "./import-wizard";
+import { ImportFlow } from "./import-flow";
 
 export default function ImportStartersPage() {
   return (
@@ -12,7 +12,7 @@ export default function ImportStartersPage() {
         <ArrowLeft className="h-4 w-4" />
         Back to starters
       </Link>
-      <ImportWizard />
+      <ImportFlow />
     </div>
   );
 }

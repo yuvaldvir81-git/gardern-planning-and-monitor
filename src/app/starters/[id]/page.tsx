@@ -16,11 +16,11 @@ export default async function StarterDetailPage({
   return (
     <div className="mx-auto w-full max-w-3xl flex-1 px-4 py-8">
       <Link
-        href="/starters"
+        href={result.starter.trayId ? `/starters/trays/${result.starter.trayId}` : "/starters"}
         className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to starters
+        {result.starter.trayId ? "Back to tray" : "Back to starters"}
       </Link>
       <StarterDetail starter={result.starter} entries={result.entries} />
     </div>
