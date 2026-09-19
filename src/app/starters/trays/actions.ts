@@ -5,38 +5,27 @@ import { revalidatePath } from "next/cache";
 import { getDb } from "@/db";
 import { plantStarters, starterTrays } from "@/db/schema";
 import { requireUserId } from "../actions";
-import { trayFormSchema, type TrayFormValues } from "@/lib/validations";
-import { extractGrid, readSheetTable } from "@/lib/spreadsheet";
+import {
+  trayBatchFormSchema,
+  trayFormSchema,
+  type TrayBatchFormValues,
+  type TrayFormValues,
+} from "@/lib/validations";
+import { extractGrid, readAllSheetTables, readSheetTable } from "@/lib/spreadsheet";
 
 const MAX_CELLS = 500;
 
-export async function parseGridFile(formData: FormData) {
-  await requireUserId();
-
-  const file = formData.get("file");
-  if (!(file instanceof File)) throw new Error("No file provided");
-  const requestedSheet = formData.get("sheet");
-  const sheetName = typeof requestedSheet === "string" && requestedSheet ? requestedSheet : undefined;
-
-  const result = await readSheetTable(file, sheetName);
-  if (result.needsSheetSelection) {
-    return { needsSheetSelection: true as const, sheets: result.sheets, grid: [] as string[][] };
-  }
-
-  const grid = extractGrid(result.table);
-  const cellCount = grid.reduce((sum, row) => sum + row.filter((c) => c).length, 0);
-  if (cellCount > MAX_CELLS) {
-    throw new Error(`This sheet has ${cellCount} filled cells — the limit is ${MAX_CELLS}.`);
-  }
-
-  return { needsSheetSelection: false as const, grid };
+function gridFilledCount(grid: string[][]): number {
+  return grid.reduce((sum, row) => sum + row.filter((c) => c).length, 0);
 }
 
-export async function createTrayFromGrid(values: TrayFormValues, grid: string[][]) {
-  const userId = await requireUserId();
-  const data = trayFormSchema.parse(values);
+async function insertTrayWithGrid(
+  userId: string,
+  name: string,
+  data: TrayBatchFormValues,
+  grid: string[][]
+) {
   const db = getDb();
-
   const rows = grid.length;
   const cols = rows > 0 ? grid[0].length : 0;
   if (rows === 0 || cols === 0) throw new Error("The grid is empty");
@@ -45,7 +34,7 @@ export async function createTrayFromGrid(values: TrayFormValues, grid: string[][
     .insert(starterTrays)
     .values({
       userId,
-      name: data.name,
+      name,
       rows,
       cols,
       datePlanted: data.datePlanted,
@@ -75,8 +64,94 @@ export async function createTrayFromGrid(values: TrayFormValues, grid: string[][
     );
   }
 
+  return { trayId: tray.id, name, imported: cells.length };
+}
+
+export async function parseGridFile(formData: FormData) {
+  await requireUserId();
+
+  const file = formData.get("file");
+  if (!(file instanceof File)) throw new Error("No file provided");
+  const requestedSheet = formData.get("sheet");
+  const sheetName = typeof requestedSheet === "string" && requestedSheet ? requestedSheet : undefined;
+
+  const result = await readSheetTable(file, sheetName);
+  if (result.needsSheetSelection) {
+    return { needsSheetSelection: true as const, sheets: result.sheets, grid: [] as string[][] };
+  }
+
+  const grid = extractGrid(result.table);
+  const cellCount = gridFilledCount(grid);
+  if (cellCount > MAX_CELLS) {
+    throw new Error(`This sheet has ${cellCount} filled cells — the limit is ${MAX_CELLS}.`);
+  }
+
+  return { needsSheetSelection: false as const, grid };
+}
+
+export type ParsedTraySheet =
+  | { name: string; grid: string[][]; filledCount: number; error?: undefined }
+  | { name: string; grid: []; filledCount: number; error: string };
+
+export async function parseAllGridSheets(formData: FormData) {
+  await requireUserId();
+
+  const file = formData.get("file");
+  if (!(file instanceof File)) throw new Error("No file provided");
+
+  const sheets = await readAllSheetTables(file);
+
+  const results: ParsedTraySheet[] = sheets.map(({ name, table }) => {
+    try {
+      const grid = extractGrid(table);
+      const filledCount = gridFilledCount(grid);
+      if (filledCount === 0) {
+        return { name, grid: [], filledCount: 0, error: "No filled cells" };
+      }
+      if (filledCount > MAX_CELLS) {
+        return {
+          name,
+          grid: [],
+          filledCount,
+          error: `Too many cells (limit ${MAX_CELLS})`,
+        };
+      }
+      return { name, grid, filledCount };
+    } catch (err) {
+      return {
+        name,
+        grid: [],
+        filledCount: 0,
+        error: err instanceof Error ? err.message : "Couldn't parse this sheet",
+      };
+    }
+  });
+
+  return { sheets: results };
+}
+
+export async function createTrayFromGrid(values: TrayFormValues, grid: string[][]) {
+  const userId = await requireUserId();
+  const data = trayFormSchema.parse(values);
+  const result = await insertTrayWithGrid(userId, data.name, data, grid);
   revalidatePath("/starters");
-  return { trayId: tray.id, imported: cells.length };
+  return { trayId: result.trayId, imported: result.imported };
+}
+
+export async function createTraysFromSheets(
+  values: TrayBatchFormValues,
+  sheets: { name: string; grid: string[][] }[]
+) {
+  const userId = await requireUserId();
+  const data = trayBatchFormSchema.parse(values);
+
+  const created = [];
+  for (const sheet of sheets) {
+    created.push(await insertTrayWithGrid(userId, sheet.name, data, sheet.grid));
+  }
+
+  revalidatePath("/starters");
+  return { trays: created };
 }
 
 export async function getTraysForUser() {

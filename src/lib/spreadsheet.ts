@@ -46,12 +46,39 @@ export async function readSheetTable(file: File, sheetName?: string): Promise<Sh
   const worksheet = sheetName ? workbook.getWorksheet(sheetName) : workbook.worksheets[0];
   if (!worksheet) throw new Error(`Sheet "${sheetName}" was not found`);
 
+  return { needsSheetSelection: false, table: worksheetToTable(worksheet) };
+}
+
+function worksheetToTable(worksheet: ExcelJS.Worksheet): string[][] {
   const table: string[][] = [];
   worksheet.eachRow({ includeEmpty: true }, (row) => {
     const values = (row.values as unknown[]).slice(1);
     table.push(values.map(cellToString));
   });
-  return { needsSheetSelection: false, table };
+  return table;
+}
+
+/** Reads every sheet in the file into a raw table, named after the sheet (or the file, for CSV). */
+export async function readAllSheetTables(
+  file: File
+): Promise<{ name: string; table: string[][] }[]> {
+  const isCsv = file.name.toLowerCase().endsWith(".csv") || file.type === "text/csv";
+
+  if (isCsv) {
+    const text = await file.text();
+    const result = Papa.parse<string[]>(text, { skipEmptyLines: false });
+    return [{ name: file.name.replace(/\.csv$/i, ""), table: result.data }];
+  }
+
+  const buffer = await file.arrayBuffer();
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer);
+  if (workbook.worksheets.length === 0) throw new Error("The file has no sheets");
+
+  return workbook.worksheets.map((worksheet) => ({
+    name: worksheet.name,
+    table: worksheetToTable(worksheet),
+  }));
 }
 
 /**

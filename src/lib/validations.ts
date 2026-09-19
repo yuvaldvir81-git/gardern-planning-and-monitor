@@ -66,3 +66,7 @@ export const trayFormSchema = z.object({
 });
 
 export type TrayFormValues = z.infer<typeof trayFormSchema>;
+
+export const trayBatchFormSchema = trayFormSchema.omit({ name: true });
+
+export type TrayBatchFormValues = z.infer<typeof trayBatchFormSchema>;
