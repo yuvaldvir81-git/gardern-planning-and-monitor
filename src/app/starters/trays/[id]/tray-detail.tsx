@@ -22,6 +22,7 @@ import { deleteTray, updateTray } from "../actions";
 import { TrayEditDialog } from "./tray-edit-dialog";
 import { EditableTrayGrid } from "./editable-tray-grid";
 import { AddCellDialog } from "./add-cell-dialog";
+import type { SeedMetadataSummary } from "@/lib/seed-metadata";
 import type { plantStarters, starterTrays } from "@/db/schema";
 
 type Tray = typeof starterTrays.$inferSelect;
@@ -31,10 +32,12 @@ export function TrayDetail({
   tray,
   starters,
   seedNames,
+  metadataByName,
 }: {
   tray: Tray;
   starters: Starter[];
   seedNames: string[];
+  metadataByName: Record<string, SeedMetadataSummary>;
 }) {
   const router = useRouter();
   const [isEditingCells, setIsEditingCells] = useState(false);
@@ -151,10 +154,12 @@ export function TrayDetail({
                 rows={tray.rows}
                 cols={tray.cols}
                 starters={starters}
+                metadataByName={metadataByName}
                 onEmptyCellClick={(rowIndex, colIndex) => setAddPosition({ rowIndex, colIndex })}
               />
               <p className="mt-3 text-xs text-muted-foreground">
                 Click a filled cell to open its growth log, or an empty one to add a seed there.
+                Cells with a dot have seed metadata — hover to see it.
               </p>
             </>
           )}

@@ -2,12 +2,13 @@
 
 import { generateText, Output } from "ai";
 import { z } from "zod";
-import { and, asc, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, isNotNull, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getDb } from "@/db";
 import { seedTypes } from "@/db/schema";
 import { requireUserId } from "../actions";
 import { seedTypeMetadataFormSchema, type SeedTypeMetadataFormValues } from "@/lib/validations";
+import type { SeedMetadataSummary } from "@/lib/seed-metadata";
 
 /** Upserts any new seed names into the user's seed bank. Safe to call with names already present. */
 export async function ensureSeedTypes(userId: string, names: string[]) {
@@ -32,6 +33,26 @@ export async function getSeedTypeNames() {
     .orderBy(asc(seedTypes.name));
 
   return rows.map((r) => r.name);
+}
+
+/** Metadata for seed types that have been generated at least once, keyed by name, for showing on tray/starter cells. */
+export async function getSeedTypeMetadataMap(): Promise<Record<string, SeedMetadataSummary>> {
+  const userId = await requireUserId();
+  const db = getDb();
+
+  const rows = await db
+    .select({
+      name: seedTypes.name,
+      daysToGerminateMin: seedTypes.daysToGerminateMin,
+      daysToGerminateMax: seedTypes.daysToGerminateMax,
+      daysToMaturity: seedTypes.daysToMaturity,
+      sunRequirement: seedTypes.sunRequirement,
+      spacingCm: seedTypes.spacingCm,
+    })
+    .from(seedTypes)
+    .where(and(eq(seedTypes.userId, userId), isNotNull(seedTypes.metadataGeneratedAt)));
+
+  return Object.fromEntries(rows.map((r) => [r.name, r]));
 }
 
 export async function getSeedTypesForUser() {

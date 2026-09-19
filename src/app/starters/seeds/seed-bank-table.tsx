@@ -20,16 +20,10 @@ import {
   updateSeedTypeMetadata,
 } from "../seed-types/actions";
 import { SeedTypeEditDialog } from "./seed-type-edit-dialog";
+import { formatGerminationRange } from "@/lib/seed-metadata";
 import type { seedTypes } from "@/db/schema";
 
 type SeedType = typeof seedTypes.$inferSelect;
-
-function germinationRange(seedType: SeedType) {
-  const { daysToGerminateMin: min, daysToGerminateMax: max } = seedType;
-  if (min && max) return min === max ? `${min}d` : `${min}–${max}d`;
-  if (min || max) return `${min ?? max}d`;
-  return "—";
-}
 
 export function SeedBankTable({ seedTypes }: { seedTypes: SeedType[] }) {
   const router = useRouter();
@@ -110,7 +104,7 @@ export function SeedBankTable({ seedTypes }: { seedTypes: SeedType[] }) {
                 <TableRow key={seedType.id}>
                   <TableCell className="font-medium">{seedType.name}</TableCell>
                   <TableCell className="text-muted-foreground">
-                    {germinationRange(seedType)}
+                    {formatGerminationRange(seedType) ?? "—"}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {seedType.daysToMaturity ? `${seedType.daysToMaturity}d` : "—"}

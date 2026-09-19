@@ -3,11 +3,16 @@ import { Sprout } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
 import { getStartersForUser } from "./actions";
 import { getTraysForUser } from "./trays/actions";
+import { getSeedTypeMetadataMap } from "./seed-types/actions";
 import { StartersTable } from "./starters-table";
 import { TraysSection } from "./trays-section";
 
 export default async function StartersPage() {
-  const [starters, trays] = await Promise.all([getStartersForUser(), getTraysForUser()]);
+  const [starters, trays, metadataByName] = await Promise.all([
+    getStartersForUser(),
+    getTraysForUser(),
+    getSeedTypeMetadataMap(),
+  ]);
 
   return (
     <div className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
@@ -26,7 +31,7 @@ export default async function StartersPage() {
           <UserButton />
         </div>
       </div>
-      <TraysSection trays={trays} />
+      <TraysSection trays={trays} metadataByName={metadataByName} />
       <StartersTable starters={starters} />
     </div>
   );

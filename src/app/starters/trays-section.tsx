@@ -2,10 +2,17 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrayGrid } from "./tray-grid";
 import type { getTraysForUser } from "./trays/actions";
+import type { SeedMetadataSummary } from "@/lib/seed-metadata";
 
 type Trays = Awaited<ReturnType<typeof getTraysForUser>>;
 
-export function TraysSection({ trays }: { trays: Trays }) {
+export function TraysSection({
+  trays,
+  metadataByName,
+}: {
+  trays: Trays;
+  metadataByName: Record<string, SeedMetadataSummary>;
+}) {
   if (trays.length === 0) return null;
 
   return (
@@ -29,6 +36,7 @@ export function TraysSection({ trays }: { trays: Trays }) {
                   starters={tray.starters}
                   size="sm"
                   linkify={false}
+                  metadataByName={metadataByName}
                 />
               </CardContent>
             </Card>

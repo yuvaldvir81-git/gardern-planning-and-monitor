@@ -2,12 +2,16 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getTrayWithStarters } from "../actions";
-import { getSeedTypeNames } from "../../seed-types/actions";
+import { getSeedTypeMetadataMap, getSeedTypeNames } from "../../seed-types/actions";
 import { TrayDetail } from "./tray-detail";
 
 export default async function TrayDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [result, seedNames] = await Promise.all([getTrayWithStarters(id), getSeedTypeNames()]);
+  const [result, seedNames, metadataByName] = await Promise.all([
+    getTrayWithStarters(id),
+    getSeedTypeNames(),
+    getSeedTypeMetadataMap(),
+  ]);
   if (!result) notFound();
 
   return (
@@ -19,7 +23,12 @@ export default async function TrayDetailPage({ params }: { params: Promise<{ id:
         <ArrowLeft className="h-4 w-4" />
         Back to starters
       </Link>
-      <TrayDetail tray={result.tray} starters={result.starters} seedNames={seedNames} />
+      <TrayDetail
+        tray={result.tray}
+        starters={result.starters}
+        seedNames={seedNames}
+        metadataByName={metadataByName}
+      />
     </div>
   );
 }

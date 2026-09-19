@@ -2,9 +2,24 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { starterStatusColors } from "@/lib/validations";
+import { formatGerminationRange, type SeedMetadataSummary } from "@/lib/seed-metadata";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { plantStarters } from "@/db/schema";
 
 type Starter = Pick<typeof plantStarters.$inferSelect, "id" | "rowIndex" | "colIndex" | "name" | "status">;
+
+function MetadataTooltipContent({ name, metadata }: { name: string; metadata: SeedMetadataSummary }) {
+  const germination = formatGerminationRange(metadata);
+  return (
+    <div className="space-y-0.5">
+      <p className="font-medium">{name}</p>
+      {germination && <p>Germinate: {germination}</p>}
+      {metadata.daysToMaturity && <p>Maturity: {metadata.daysToMaturity}d</p>}
+      {metadata.sunRequirement && <p>Sun: {metadata.sunRequirement}</p>}
+      {metadata.spacingCm && <p>Spacing: {metadata.spacingCm} cm</p>}
+    </div>
+  );
+}
 
 export function TrayGrid({
   rows,
@@ -13,6 +28,7 @@ export function TrayGrid({
   size = "md",
   linkify = true,
   onEmptyCellClick,
+  metadataByName = {},
 }: {
   rows: number;
   cols: number;
@@ -22,6 +38,8 @@ export function TrayGrid({
   linkify?: boolean;
   /** When set, empty cells become clickable to add a starter at that position. */
   onEmptyCellClick?: (rowIndex: number, colIndex: number) => void;
+  /** Seed metadata keyed by starter name — filled cells with a matching entry show it in a hover tooltip. */
+  metadataByName?: Record<string, SeedMetadataSummary>;
 }) {
   const cellByPosition = new Map(starters.map((s) => [`${s.rowIndex}:${s.colIndex}`, s]));
   const cellSize = size === "sm" ? "h-9" : "h-14";
@@ -58,31 +76,53 @@ export function TrayGrid({
               />
             );
           }
+
+          const metadata = metadataByName[starter.name];
           const cellClassName = cn(
             cellSize,
-            "flex items-center justify-center overflow-hidden rounded-md px-1 text-center text-xs leading-tight font-medium",
+            "relative flex items-center justify-center overflow-hidden rounded-md px-1 text-center text-xs leading-tight font-medium",
             starterStatusColors[starter.status],
             linkify && "transition-opacity hover:opacity-80"
           );
           const content = (
-            <span className="line-clamp-2 break-words">{starter.name}</span>
+            <>
+              <span className="line-clamp-2 break-words">{starter.name}</span>
+              {metadata && (
+                <span className="absolute top-0.5 right-0.5 size-1.5 rounded-full bg-current opacity-60" />
+              )}
+            </>
           );
-          if (!linkify) {
-            return (
-              <div key={`${r}:${c}`} title={starter.name} className={cellClassName}>
+
+          const key = `${r}:${c}`;
+          const cellTitle = metadata ? undefined : starter.name;
+
+          if (!metadata) {
+            return linkify ? (
+              <Link key={key} href={`/starters/${starter.id}`} title={cellTitle} className={cellClassName}>
+                {content}
+              </Link>
+            ) : (
+              <div key={key} title={cellTitle} className={cellClassName}>
                 {content}
               </div>
             );
           }
-          return (
-            <Link
-              key={`${r}:${c}`}
-              href={`/starters/${starter.id}`}
-              title={starter.name}
-              className={cellClassName}
-            >
+
+          const cellNode = linkify ? (
+            <Link href={`/starters/${starter.id}`} className={cellClassName}>
               {content}
             </Link>
+          ) : (
+            <div className={cellClassName}>{content}</div>
+          );
+
+          return (
+            <Tooltip key={key}>
+              <TooltipTrigger render={cellNode} />
+              <TooltipContent>
+                <MetadataTooltipContent name={starter.name} metadata={metadata} />
+              </TooltipContent>
+            </Tooltip>
           );
         })
       )}
