@@ -36,7 +36,7 @@ import { parseImportFile, importStarters } from "./actions";
 
 const NO_COLUMN = "__none__";
 
-type Step = "upload" | "map" | "preview";
+type Step = "upload" | "choose-sheet" | "map" | "preview";
 
 export function ImportWizard() {
   const router = useRouter();
@@ -44,6 +44,9 @@ export function ImportWizard() {
   const [step, setStep] = useState<Step>("upload");
   const [isParsing, setIsParsing] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [sheetNames, setSheetNames] = useState<string[]>([]);
 
   const [fileName, setFileName] = useState("");
   const [headers, setHeaders] = useState<string[]>([]);
@@ -57,14 +60,21 @@ export function ImportWizard() {
   );
   const validRows = normalizedRows.filter((r) => r.errors.length === 0);
 
-  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  async function parseAndContinue(file: File, sheet?: string) {
     setIsParsing(true);
     try {
       const formData = new FormData();
       formData.set("file", file);
+      if (sheet) formData.set("sheet", sheet);
       const result = await parseImportFile(formData);
+
+      if (result.needsSheetSelection) {
+        setPendingFile(file);
+        setSheetNames(result.sheets);
+        setStep("choose-sheet");
+        return;
+      }
+
       setFileName(file.name);
       setHeaders(result.headers);
       setRawRows(result.rows);
@@ -75,8 +85,19 @@ export function ImportWizard() {
       toast.error(err instanceof Error ? err.message : "Couldn't read that file");
     } finally {
       setIsParsing(false);
-      e.target.value = "";
     }
+  }
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    await parseAndContinue(file);
+  }
+
+  async function handleSheetChosen(sheet: string) {
+    if (!pendingFile) return;
+    await parseAndContinue(pendingFile, sheet);
   }
 
   async function handleImport() {
@@ -136,6 +157,45 @@ export function ImportWizard() {
             </a>
             .
           </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (step === "choose-sheet") {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Choose a sheet — {pendingFile?.name}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            This workbook has {sheetNames.length} sheets. Pick the one with your starters.
+          </p>
+          <div className="grid gap-2 sm:max-w-xs">
+            {sheetNames.map((name) => (
+              <Button
+                key={name}
+                type="button"
+                variant="outline"
+                className="justify-start"
+                disabled={isParsing}
+                onClick={() => handleSheetChosen(name)}
+              >
+                {isParsing ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {name}
+              </Button>
+            ))}
+          </div>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setPendingFile(null);
+              setStep("upload");
+            }}
+          >
+            Back
+          </Button>
         </CardContent>
       </Card>
     );
