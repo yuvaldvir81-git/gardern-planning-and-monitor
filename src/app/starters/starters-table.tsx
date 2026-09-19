@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { Plus, Trash2, Upload } from "lucide-react";
+import { Grid3x3, Plus, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -52,6 +52,10 @@ export function StartersTable({ starters }: { starters: Starter[] }) {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">Plant starters</h1>
         <div className="flex gap-2">
+          <Button variant="outline" render={<Link href="/starters/trays/new" />}>
+            <Grid3x3 className="h-4 w-4" />
+            New tray
+          </Button>
           <Button variant="outline" render={<Link href="/starters/import" />}>
             <Upload className="h-4 w-4" />
             Import
