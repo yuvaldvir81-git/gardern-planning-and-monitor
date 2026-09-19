@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { starterStatusColors } from "@/lib/validations";
 import type { plantStarters } from "@/db/schema";
@@ -11,6 +12,7 @@ export function TrayGrid({
   starters,
   size = "md",
   linkify = true,
+  onEmptyCellClick,
 }: {
   rows: number;
   cols: number;
@@ -18,6 +20,8 @@ export function TrayGrid({
   size?: "sm" | "md";
   /** Set false when the grid is nested inside another link (e.g. a tray card) to avoid nested <a> tags. */
   linkify?: boolean;
+  /** When set, empty cells become clickable to add a starter at that position. */
+  onEmptyCellClick?: (rowIndex: number, colIndex: number) => void;
 }) {
   const cellByPosition = new Map(starters.map((s) => [`${s.rowIndex}:${s.colIndex}`, s]));
   const cellSize = size === "sm" ? "h-9" : "h-14";
@@ -31,6 +35,22 @@ export function TrayGrid({
         Array.from({ length: cols }).map((_, c) => {
           const starter = cellByPosition.get(`${r}:${c}`);
           if (!starter) {
+            if (onEmptyCellClick) {
+              return (
+                <button
+                  key={`${r}:${c}`}
+                  type="button"
+                  aria-label={`Add a starter at row ${r + 1}, column ${c + 1}`}
+                  onClick={() => onEmptyCellClick(r, c)}
+                  className={cn(
+                    cellSize,
+                    "group flex items-center justify-center rounded-md border border-dashed hover:border-primary hover:bg-muted"
+                  )}
+                >
+                  <Plus className="h-3.5 w-3.5 text-transparent group-hover:text-muted-foreground" />
+                </button>
+              );
+            }
             return (
               <div
                 key={`${r}:${c}`}

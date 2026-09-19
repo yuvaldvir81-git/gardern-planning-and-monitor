@@ -21,6 +21,7 @@ import { TrayGrid } from "../../tray-grid";
 import { deleteTray, updateTray } from "../actions";
 import { TrayEditDialog } from "./tray-edit-dialog";
 import { EditableTrayGrid } from "./editable-tray-grid";
+import { AddCellDialog } from "./add-cell-dialog";
 import type { plantStarters, starterTrays } from "@/db/schema";
 
 type Tray = typeof starterTrays.$inferSelect;
@@ -37,6 +38,9 @@ export function TrayDetail({
 }) {
   const router = useRouter();
   const [isEditingCells, setIsEditingCells] = useState(false);
+  const [addPosition, setAddPosition] = useState<{ rowIndex: number; colIndex: number } | null>(
+    null
+  );
 
   async function handleDelete() {
     try {
@@ -143,14 +147,32 @@ export function TrayDetail({
             />
           ) : (
             <>
-              <TrayGrid rows={tray.rows} cols={tray.cols} starters={starters} />
+              <TrayGrid
+                rows={tray.rows}
+                cols={tray.cols}
+                starters={starters}
+                onEmptyCellClick={(rowIndex, colIndex) => setAddPosition({ rowIndex, colIndex })}
+              />
               <p className="mt-3 text-xs text-muted-foreground">
-                Click a cell to open that starter&apos;s growth log.
+                Click a filled cell to open its growth log, or an empty one to add a seed there.
               </p>
             </>
           )}
         </CardContent>
       </Card>
+
+      <AddCellDialog
+        trayId={tray.id}
+        position={addPosition}
+        seedNames={seedNames}
+        onOpenChange={(open) => {
+          if (!open) setAddPosition(null);
+        }}
+        onAdded={() => {
+          setAddPosition(null);
+          router.refresh();
+        }}
+      />
     </div>
   );
 }
