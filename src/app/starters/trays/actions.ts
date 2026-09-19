@@ -197,6 +197,87 @@ export async function getTrayWithStarters(id: string) {
   return { tray, starters };
 }
 
+export async function updateTray(id: string, values: TrayFormValues) {
+  const userId = await requireUserId();
+  const data = trayFormSchema.parse(values);
+  const db = getDb();
+
+  await db
+    .update(starterTrays)
+    .set({
+      name: data.name,
+      datePlanted: data.datePlanted,
+      location: data.location || null,
+      seedSource: data.seedSource || null,
+      notes: data.notes || null,
+      updatedAt: new Date(),
+    })
+    .where(and(eq(starterTrays.id, id), eq(starterTrays.userId, userId)));
+
+  revalidatePath(`/starters/trays/${id}`);
+  revalidatePath("/starters");
+}
+
+export type TrayCellChange = { rowIndex: number; colIndex: number; name: string };
+
+export async function updateTrayCells(trayId: string, changes: TrayCellChange[]) {
+  const userId = await requireUserId();
+  const db = getDb();
+
+  const [tray] = await db
+    .select()
+    .from(starterTrays)
+    .where(and(eq(starterTrays.id, trayId), eq(starterTrays.userId, userId)));
+  if (!tray) throw new Error("Tray not found");
+
+  const existing = await db.select().from(plantStarters).where(eq(plantStarters.trayId, trayId));
+  const existingByPosition = new Map(existing.map((s) => [`${s.rowIndex}:${s.colIndex}`, s]));
+
+  const toCreate: TrayCellChange[] = [];
+  let updated = 0;
+
+  for (const change of changes) {
+    const name = change.name.trim();
+    if (!name) continue;
+    const key = `${change.rowIndex}:${change.colIndex}`;
+    const existingStarter = existingByPosition.get(key);
+    if (existingStarter) {
+      if (existingStarter.name !== name) {
+        await db
+          .update(plantStarters)
+          .set({ name, updatedAt: new Date() })
+          .where(eq(plantStarters.id, existingStarter.id));
+        updated++;
+      }
+    } else {
+      toCreate.push({ ...change, name });
+    }
+  }
+
+  if (toCreate.length > 0) {
+    await db.insert(plantStarters).values(
+      toCreate.map((c) => ({
+        userId,
+        trayId,
+        rowIndex: c.rowIndex,
+        colIndex: c.colIndex,
+        name: c.name,
+        datePlanted: tray.datePlanted,
+        location: tray.location,
+        seedSource: tray.seedSource,
+        status: "seed" as const,
+      }))
+    );
+  }
+
+  const touchedNames = changes.map((c) => c.name).filter(Boolean);
+  await ensureSeedTypes(userId, touchedNames);
+
+  revalidatePath(`/starters/trays/${trayId}`);
+  revalidatePath("/starters");
+  return { updated, created: toCreate.length };
+}
+
 export async function deleteTray(id: string) {
   const userId = await requireUserId();
   const db = getDb();

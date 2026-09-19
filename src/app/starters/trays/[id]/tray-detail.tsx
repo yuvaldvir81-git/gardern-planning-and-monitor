@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Trash2 } from "lucide-react";
+import { useState } from "react";
+import { Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,14 +18,25 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { TrayGrid } from "../../tray-grid";
-import { deleteTray } from "../actions";
+import { deleteTray, updateTray } from "../actions";
+import { TrayEditDialog } from "./tray-edit-dialog";
+import { EditableTrayGrid } from "./editable-tray-grid";
 import type { plantStarters, starterTrays } from "@/db/schema";
 
 type Tray = typeof starterTrays.$inferSelect;
 type Starter = typeof plantStarters.$inferSelect;
 
-export function TrayDetail({ tray, starters }: { tray: Tray; starters: Starter[] }) {
+export function TrayDetail({
+  tray,
+  starters,
+  seedNames,
+}: {
+  tray: Tray;
+  starters: Starter[];
+  seedNames: string[];
+}) {
   const router = useRouter();
+  const [isEditingCells, setIsEditingCells] = useState(false);
 
   async function handleDelete() {
     try {
@@ -48,28 +60,42 @@ export function TrayDetail({ tray, starters }: { tray: Tray; starters: Starter[]
               {tray.rows} × {tray.cols} tray — {filledCount} starter{filledCount === 1 ? "" : "s"}
             </p>
           </div>
-          <AlertDialog>
-            <AlertDialogTrigger
-              render={
-                <Button variant="ghost" size="icon" aria-label="Delete tray">
-                  <Trash2 className="h-4 w-4" />
+          <div className="flex items-center gap-1">
+            <TrayEditDialog
+              tray={tray}
+              onSubmit={async (values) => {
+                await updateTray(tray.id, values);
+                router.refresh();
+              }}
+              trigger={
+                <Button variant="ghost" size="icon" aria-label="Edit tray">
+                  <Pencil className="h-4 w-4" />
                 </Button>
               }
             />
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete this tray?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This removes &quot;{tray.name}&quot; and every starter and growth log in it.
-                  This can&apos;t be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+            <AlertDialog>
+              <AlertDialogTrigger
+                render={
+                  <Button variant="ghost" size="icon" aria-label="Delete tray">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                }
+              />
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete this tray?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This removes &quot;{tray.name}&quot; and every starter and growth log in it.
+                    This can&apos;t be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
           <div>
@@ -94,14 +120,35 @@ export function TrayDetail({ tray, starters }: { tray: Tray; starters: Starter[]
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg">Grid</CardTitle>
+          {!isEditingCells && (
+            <Button variant="outline" size="sm" onClick={() => setIsEditingCells(true)}>
+              Edit cells
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
-          <TrayGrid rows={tray.rows} cols={tray.cols} starters={starters} />
-          <p className="mt-3 text-xs text-muted-foreground">
-            Click a cell to open that starter&apos;s growth log.
-          </p>
+          {isEditingCells ? (
+            <EditableTrayGrid
+              trayId={tray.id}
+              rows={tray.rows}
+              cols={tray.cols}
+              starters={starters}
+              seedNames={seedNames}
+              onDone={() => {
+                setIsEditingCells(false);
+                router.refresh();
+              }}
+            />
+          ) : (
+            <>
+              <TrayGrid rows={tray.rows} cols={tray.cols} starters={starters} />
+              <p className="mt-3 text-xs text-muted-foreground">
+                Click a cell to open that starter&apos;s growth log.
+              </p>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>
