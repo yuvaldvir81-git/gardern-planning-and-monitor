@@ -12,7 +12,7 @@ import {
   type StarterFormValues,
 } from "@/lib/validations";
 
-async function requireUserId() {
+export async function requireUserId() {
   const { userId } = await auth();
   if (!userId) throw new Error("Not authenticated");
   return userId;

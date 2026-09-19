@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -51,18 +51,24 @@ export function StartersTable({ starters }: { starters: Starter[] }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">Plant starters</h1>
-        <StarterFormDialog
-          onSubmit={async (values) => {
-            await createStarter(values);
-            router.refresh();
-          }}
-          trigger={
-            <Button>
-              <Plus className="h-4 w-4" />
-              Add starter
-            </Button>
-          }
-        />
+        <div className="flex gap-2">
+          <Button variant="outline" render={<Link href="/starters/import" />}>
+            <Upload className="h-4 w-4" />
+            Import
+          </Button>
+          <StarterFormDialog
+            onSubmit={async (values) => {
+              await createStarter(values);
+              router.refresh();
+            }}
+            trigger={
+              <Button>
+                <Plus className="h-4 w-4" />
+                Add starter
+              </Button>
+            }
+          />
+        </div>
       </div>
 
       {starters.length === 0 ? (
