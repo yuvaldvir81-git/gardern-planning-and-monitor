@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -30,6 +30,8 @@ import {
   starterStatusValues,
   type StarterFormValues,
 } from "@/lib/validations";
+import { SeedNameCombobox } from "./seed-name-combobox";
+import { getSeedTypeNames } from "./seed-types/actions";
 import type { plantStarters } from "@/db/schema";
 
 type Starter = typeof plantStarters.$inferSelect;
@@ -44,6 +46,12 @@ export function StarterFormDialog({
   onSubmit: (values: StarterFormValues) => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
+  const [seedNames, setSeedNames] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (open) getSeedTypeNames().then(setSeedNames);
+  }, [open]);
+
   const {
     register,
     handleSubmit,
@@ -105,7 +113,19 @@ export function StarterFormDialog({
         <form onSubmit={handleSubmit(submit)} className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="name">Name</Label>
-            <Input id="name" placeholder="Tomato tray A - cell 3" {...register("name")} />
+            <Controller
+              control={control}
+              name="name"
+              render={({ field }) => (
+                <SeedNameCombobox
+                  id="name"
+                  placeholder="Tomato tray A - cell 3"
+                  value={field.value}
+                  onChange={field.onChange}
+                  suggestions={seedNames}
+                />
+              )}
+            />
             {errors.name && (
               <p className="text-sm text-destructive">{errors.name.message}</p>
             )}

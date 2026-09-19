@@ -8,6 +8,7 @@ import {
   integer,
   date,
   uuid,
+  unique,
 } from "drizzle-orm/pg-core";
 
 export const starterStatus = pgEnum("starter_status", [
@@ -51,6 +52,24 @@ export const plantStarters = pgTable("plant_starters", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
+
+export const seedTypes = pgTable(
+  "seed_types",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id").notNull(),
+    name: text("name").notNull(),
+    daysToGerminateMin: integer("days_to_germinate_min"),
+    daysToGerminateMax: integer("days_to_germinate_max"),
+    daysToMaturity: integer("days_to_maturity"),
+    sunRequirement: text("sun_requirement"),
+    spacingCm: numeric("spacing_cm", { precision: 6, scale: 2 }),
+    notes: text("notes"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [unique("seed_types_user_id_name_unique").on(table.userId, table.name)]
+);
 
 export const growthEntries = pgTable("growth_entries", {
   id: uuid("id").primaryKey().defaultRandom(),

@@ -12,6 +12,7 @@ import {
   type TrayFormValues,
 } from "@/lib/validations";
 import { extractGrid, readAllSheetTables, readSheetTable } from "@/lib/spreadsheet";
+import { ensureSeedTypes } from "../seed-types/actions";
 
 const MAX_CELLS = 500;
 
@@ -62,6 +63,7 @@ async function insertTrayWithGrid(
         status: "seed" as const,
       }))
     );
+    await ensureSeedTypes(userId, cells.map((cell) => cell.value));
   }
 
   return { trayId: tray.id, name, imported: cells.length };

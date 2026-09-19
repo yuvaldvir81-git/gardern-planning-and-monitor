@@ -11,6 +11,7 @@ import {
   type GrowthEntryFormValues,
   type StarterFormValues,
 } from "@/lib/validations";
+import { ensureSeedTypes } from "./seed-types/actions";
 
 export async function requireUserId() {
   const { userId } = await auth();
@@ -34,6 +35,7 @@ export async function createStarter(values: StarterFormValues) {
     status: data.status,
     notes: data.notes || null,
   });
+  await ensureSeedTypes(userId, [data.name]);
 
   revalidatePath("/starters");
 }
@@ -57,6 +59,7 @@ export async function updateStarter(id: string, values: StarterFormValues) {
       updatedAt: new Date(),
     })
     .where(and(eq(plantStarters.id, id), eq(plantStarters.userId, userId)));
+  await ensureSeedTypes(userId, [data.name]);
 
   revalidatePath("/starters");
   revalidatePath(`/starters/${id}`);

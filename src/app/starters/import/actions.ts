@@ -6,6 +6,7 @@ import { plantStarters } from "@/db/schema";
 import { requireUserId } from "../actions";
 import { starterFormSchema } from "@/lib/validations";
 import { extractContiguousTable, readSheetTable } from "@/lib/spreadsheet";
+import { ensureSeedTypes } from "../seed-types/actions";
 import type { NormalizedImportRow } from "@/lib/import";
 
 const MAX_ROWS = 500;
@@ -60,6 +61,7 @@ export async function importStarters(values: NormalizedImportRow["values"][]) {
       notes: data.notes || null,
     }))
   );
+  await ensureSeedTypes(userId, parsed.map((data) => data.name));
 
   revalidatePath("/starters");
   return { imported: parsed.length };
