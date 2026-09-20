@@ -152,6 +152,22 @@ export function GardenMap({
   const [isSaving, setIsSaving] = useState(false);
   const [sunGrid, setSunGrid] = useState<SunGridResult | null>(null);
   const [isComputingSun, setIsComputingSun] = useState(false);
+  const [globalError, setGlobalError] = useState<string | null>(null);
+
+  useEffect(() => {
+    function handleError(e: ErrorEvent) {
+      setGlobalError(e.message || String(e.error));
+    }
+    function handleRejection(e: PromiseRejectionEvent) {
+      setGlobalError(String(e.reason?.message ?? e.reason));
+    }
+    window.addEventListener("error", handleError);
+    window.addEventListener("unhandledrejection", handleRejection);
+    return () => {
+      window.removeEventListener("error", handleError);
+      window.removeEventListener("unhandledrejection", handleRejection);
+    };
+  }, []);
 
   function startDraw(type: ShapeType) {
     const map = mapRef.current;
@@ -230,8 +246,16 @@ export function GardenMap({
 
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_20rem]">
+      {globalError && (
+        <div className="rounded-md border-2 border-red-500 bg-red-950 p-3 text-sm text-red-200 lg:col-span-2">
+          Global error caught: {globalError}
+        </div>
+      )}
       <MapErrorBoundary>
-        <div className="h-[60vh] overflow-hidden rounded-lg border lg:h-[75vh]">
+        <div className="h-[60vh] overflow-hidden rounded-lg border-4 border-yellow-400 lg:h-[75vh]">
+          <div className="bg-yellow-400 px-2 py-0.5 text-xs font-bold text-black">
+            MAP CONTAINER SENTINEL
+          </div>
           <MapContainer
             center={[Number(garden.lat), Number(garden.lng)]}
             zoom={20}
