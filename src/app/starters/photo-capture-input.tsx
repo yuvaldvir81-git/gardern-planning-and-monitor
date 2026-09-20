@@ -3,18 +3,18 @@
 import { useRef, useState } from "react";
 import { upload } from "@vercel/blob/client";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Camera, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function PhotoCaptureInput({
   value,
   onChange,
-  label = "Add photo",
 }: {
   value: string | null;
   onChange: (url: string | null) => void;
-  label?: string;
 }) {
+  const t = useTranslations("photo");
   const inputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -30,7 +30,7 @@ export function PhotoCaptureInput({
       });
       onChange(blob.url);
     } catch {
-      toast.error("Couldn't upload photo");
+      toast.error(t("uploadError"));
     } finally {
       setIsUploading(false);
     }
@@ -43,14 +43,14 @@ export function PhotoCaptureInput({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={value}
-            alt="Seed package"
+            alt={t("alt")}
             className="h-16 w-16 rounded-md border object-cover"
           />
           <button
             type="button"
-            aria-label="Remove photo"
+            aria-label={t("removeAriaLabel")}
             onClick={() => onChange(null)}
-            className="absolute -top-1.5 -right-1.5 flex size-4.5 items-center justify-center rounded-full bg-destructive text-destructive-foreground"
+            className="absolute -top-1.5 -end-1.5 flex size-4.5 items-center justify-center rounded-full bg-destructive text-destructive-foreground"
           >
             <X className="h-3 w-3" />
           </button>
@@ -77,7 +77,7 @@ export function PhotoCaptureInput({
         ) : (
           <Camera className="h-4 w-4" />
         )}
-        {value ? "Retake" : label}
+        {value ? t("retake") : t("addPhoto")}
       </Button>
     </div>
   );

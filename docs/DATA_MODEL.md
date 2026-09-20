@@ -52,6 +52,16 @@ hand on `/starters/seeds` (see
 | `notes` | free-form, e.g. agent-generated summary |
 | `metadata_generated_at` | null until the agent has generated this row at least once; regenerating overwrites all metadata columns including manual edits |
 
+## `user_settings`
+
+One row per user (`user_id` is the primary key — no separate `id`). Currently just
+`language` (`app_locale` enum: `en` | `he`), defaulting to `en`. This is the durable
+per-account record; the `NEXT_LOCALE` cookie is what actually drives rendering on any
+given request (see [FEATURES.md](./FEATURES.md#language-english--hebrew)) — the two
+are only synced when the user explicitly changes their language on `/settings`, so a
+fresh browser session with no cookie renders English even if the account's stored
+preference is Hebrew, until they revisit Settings.
+
 ## Why not the `xlsx` package
 
 Import parses `.xlsx` with `exceljs` and `.csv` with `papaparse` instead of the more

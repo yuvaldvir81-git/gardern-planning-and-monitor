@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Loader2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,6 +29,7 @@ import {
 type Step = "upload" | "choose-sheet" | "details" | "batch-review";
 
 export function GridImportWizard({ onBack }: { onBack: () => void }) {
+  const t = useTranslations("importGrid");
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<Step>("upload");
@@ -80,7 +82,7 @@ export function GridImportWizard({ onBack }: { onBack: () => void }) {
       setGrid(result.grid);
       setStep("details");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't read that file");
+      toast.error(err instanceof Error ? err.message : t("toastReadError"));
     } finally {
       setIsParsing(false);
     }
@@ -96,7 +98,7 @@ export function GridImportWizard({ onBack }: { onBack: () => void }) {
       setParsedSheets(result.sheets);
       setStep("batch-review");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't read that file");
+      toast.error(err instanceof Error ? err.message : t("toastReadError"));
     } finally {
       setIsParsing(false);
     }
@@ -117,10 +119,10 @@ export function GridImportWizard({ onBack }: { onBack: () => void }) {
     setIsCreating(true);
     try {
       const { trayId, imported } = await createTrayFromGrid(values, grid);
-      toast.success(`Created tray with ${imported} starter${imported === 1 ? "" : "s"}`);
+      toast.success(t("toastCreated", { count: imported }));
       router.push(`/starters/trays/${trayId}`);
     } catch {
-      toast.error("Couldn't create the tray. Please try again.");
+      toast.error(t("toastCreateError"));
     } finally {
       setIsCreating(false);
     }
@@ -133,10 +135,10 @@ export function GridImportWizard({ onBack }: { onBack: () => void }) {
         values,
         validSheets.map((s) => ({ name: s.name, grid: s.grid }))
       );
-      toast.success(`Created ${trays.length} tray${trays.length === 1 ? "" : "s"}`);
+      toast.success(t("toastCreatedBatch", { count: trays.length }));
       router.push("/starters");
     } catch {
-      toast.error("Couldn't create the trays. Please try again.");
+      toast.error(t("toastCreateBatchError"));
     } finally {
       setIsCreating(false);
     }
@@ -146,14 +148,10 @@ export function GridImportWizard({ onBack }: { onBack: () => void }) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Import a tray grid</CardTitle>
+          <CardTitle className="text-lg">{t("uploadTitle")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Upload the .xlsx or .csv sheet that lays out your tray — each cell should hold one
-            seed name, matching the physical position in the tray. We&apos;ll stop at the first
-            empty row or column.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("uploadDescription")}</p>
           <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-10 text-center">
             {isParsing ? (
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -175,12 +173,12 @@ export function GridImportWizard({ onBack }: { onBack: () => void }) {
                 disabled={isParsing}
                 onClick={() => fileInputRef.current?.click()}
               >
-                Choose file
+                {t("chooseFile")}
               </Button>
             </div>
           </div>
           <Button variant="ghost" onClick={onBack}>
-            Back
+            {t("back")}
           </Button>
         </CardContent>
       </Card>
@@ -191,17 +189,19 @@ export function GridImportWizard({ onBack }: { onBack: () => void }) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Choose sheets — {pendingFile?.name}</CardTitle>
+          <CardTitle className="text-lg">
+            {t("chooseSheetsTitle", { fileName: pendingFile?.name ?? "" })}
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            This workbook has {sheetNames.length} sheets.
+            {t("chooseSheetsDescription", { count: sheetNames.length })}
           </p>
           <Button type="button" disabled={isParsing} onClick={handleImportAll}>
             {isParsing && <Loader2 className="h-4 w-4 animate-spin" />}
-            Import all {sheetNames.length} sheets as separate trays
+            {t("importAll", { count: sheetNames.length })}
           </Button>
-          <p className="text-sm text-muted-foreground">Or pick just one sheet:</p>
+          <p className="text-sm text-muted-foreground">{t("orPickOne")}</p>
           <div className="grid gap-2 sm:max-w-xs">
             {sheetNames.map((name) => (
               <Button
@@ -224,7 +224,7 @@ export function GridImportWizard({ onBack }: { onBack: () => void }) {
               setStep("upload");
             }}
           >
-            Back
+            {t("back")}
           </Button>
         </CardContent>
       </Card>
@@ -235,41 +235,45 @@ export function GridImportWizard({ onBack }: { onBack: () => void }) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Review trays — {pendingFile?.name}</CardTitle>
+          <CardTitle className="text-lg">
+            {t("batchReviewTitle", { fileName: pendingFile?.name ?? "" })}
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">
-              {validSheets.length} tray{validSheets.length === 1 ? "" : "s"} will be created,
-              named after their sheet.
+              {t("batchWillCreate", { count: validSheets.length })}
             </p>
             <ul className="grid gap-1 text-sm sm:grid-cols-2">
               {validSheets.map((s) => (
                 <li key={s.name} className="rounded-md border px-3 py-2">
                   <span className="font-medium">{s.name}</span>
                   <span className="text-muted-foreground">
-                    {" "}
-                    — {s.grid.length} × {s.grid[0]?.length ?? 0}, {s.filledCount} starter
-                    {s.filledCount === 1 ? "" : "s"}
+                    {" — "}
+                    {t("traySummary", {
+                      rows: s.grid.length,
+                      cols: s.grid[0]?.length ?? 0,
+                      count: s.filledCount,
+                    })}
                   </span>
                 </li>
               ))}
             </ul>
             {skippedSheets.length > 0 && (
               <div className="text-sm text-muted-foreground">
-                Skipped {skippedSheets.length} sheet{skippedSheets.length === 1 ? "" : "s"}:{" "}
-                {skippedSheets.map((s) => `${s.name} (${s.error})`).join(", ")}
+                {t("skipped", {
+                  count: skippedSheets.length,
+                  details: skippedSheets.map((s) => `${s.name} (${s.error})`).join(", "),
+                })}
               </div>
             )}
           </div>
 
           <form onSubmit={batchForm.handleSubmit(onSubmitBatch)} className="grid gap-4">
-            <p className="text-sm text-muted-foreground">
-              These details apply to every tray created below:
-            </p>
+            <p className="text-sm text-muted-foreground">{t("sharedDetailsHint")}</p>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="batch-datePlanted">Date planted</Label>
+                <Label htmlFor="batch-datePlanted">{t("datePlanted")}</Label>
                 <Input
                   id="batch-datePlanted"
                   type="date"
@@ -282,33 +286,33 @@ export function GridImportWizard({ onBack }: { onBack: () => void }) {
                 )}
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="batch-location">Location</Label>
+                <Label htmlFor="batch-location">{t("location")}</Label>
                 <Input
                   id="batch-location"
-                  placeholder="Windowsill"
+                  placeholder={t("locationPlaceholder")}
                   {...batchForm.register("location")}
                 />
               </div>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="batch-seedSource">Seed source</Label>
+              <Label htmlFor="batch-seedSource">{t("seedSource")}</Label>
               <Input
                 id="batch-seedSource"
-                placeholder="Baker Creek"
+                placeholder={t("seedSourcePlaceholder")}
                 {...batchForm.register("seedSource")}
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="batch-notes">Notes</Label>
+              <Label htmlFor="batch-notes">{t("notes")}</Label>
               <Textarea id="batch-notes" rows={3} {...batchForm.register("notes")} />
             </div>
             <div className="flex justify-between pt-2">
               <Button type="button" variant="outline" onClick={() => setStep("choose-sheet")}>
-                Back
+                {t("back")}
               </Button>
               <Button type="submit" disabled={isCreating || validSheets.length === 0}>
                 {isCreating && <Loader2 className="h-4 w-4 animate-spin" />}
-                Create {validSheets.length} tray{validSheets.length === 1 ? "" : "s"}
+                {t("createBatchButton", { count: validSheets.length })}
               </Button>
             </div>
           </form>
@@ -320,13 +324,16 @@ export function GridImportWizard({ onBack }: { onBack: () => void }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Name this tray — {fileName}</CardTitle>
+        <CardTitle className="text-lg">{t("detailsTitle", { fileName })}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <div>
           <p className="text-sm text-muted-foreground">
-            Detected a {grid.length} × {grid[0]?.length ?? 0} grid with {filledCount} filled
-            cell{filledCount === 1 ? "" : "s"}.
+            {t("detected", {
+              rows: grid.length,
+              cols: grid[0]?.length ?? 0,
+              count: filledCount,
+            })}
           </p>
           <div
             className="mt-3 grid gap-1 overflow-auto rounded-lg border p-2"
@@ -352,8 +359,8 @@ export function GridImportWizard({ onBack }: { onBack: () => void }) {
 
         <form onSubmit={singleForm.handleSubmit(onSubmit)} className="grid gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="name">Tray name</Label>
-            <Input id="name" placeholder="Tomato tray A" {...singleForm.register("name")} />
+            <Label htmlFor="name">{t("name")}</Label>
+            <Input id="name" placeholder={t("namePlaceholder")} {...singleForm.register("name")} />
             {singleForm.formState.errors.name && (
               <p className="text-sm text-destructive">
                 {singleForm.formState.errors.name.message}
@@ -362,7 +369,7 @@ export function GridImportWizard({ onBack }: { onBack: () => void }) {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="datePlanted">Date planted</Label>
+              <Label htmlFor="datePlanted">{t("datePlanted")}</Label>
               <Input id="datePlanted" type="date" {...singleForm.register("datePlanted")} />
               {singleForm.formState.errors.datePlanted && (
                 <p className="text-sm text-destructive">
@@ -371,25 +378,33 @@ export function GridImportWizard({ onBack }: { onBack: () => void }) {
               )}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="location">Location</Label>
-              <Input id="location" placeholder="Windowsill" {...singleForm.register("location")} />
+              <Label htmlFor="location">{t("location")}</Label>
+              <Input
+                id="location"
+                placeholder={t("locationPlaceholder")}
+                {...singleForm.register("location")}
+              />
             </div>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="seedSource">Seed source</Label>
-            <Input id="seedSource" placeholder="Baker Creek" {...singleForm.register("seedSource")} />
+            <Label htmlFor="seedSource">{t("seedSource")}</Label>
+            <Input
+              id="seedSource"
+              placeholder={t("seedSourcePlaceholder")}
+              {...singleForm.register("seedSource")}
+            />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="notes">Notes</Label>
+            <Label htmlFor="notes">{t("notes")}</Label>
             <Textarea id="notes" rows={3} {...singleForm.register("notes")} />
           </div>
           <div className="flex justify-between pt-2">
             <Button type="button" variant="outline" onClick={() => setStep("upload")}>
-              Back
+              {t("back")}
             </Button>
             <Button type="submit" disabled={isCreating || filledCount === 0}>
               {isCreating && <Loader2 className="h-4 w-4 animate-spin" />}
-              Create tray with {filledCount} starter{filledCount === 1 ? "" : "s"}
+              {t("createButton", { count: filledCount })}
             </Button>
           </div>
         </form>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +26,7 @@ function resizeGrid(grid: string[][], rows: number, cols: number): string[][] {
 }
 
 export function NewTrayForm() {
+  const t = useTranslations("newTray");
   const router = useRouter();
   const [rows, setRows] = useState(4);
   const [cols, setCols] = useState(6);
@@ -73,10 +75,10 @@ export function NewTrayForm() {
     setIsCreating(true);
     try {
       const { trayId, imported } = await createTrayFromGrid(values, grid);
-      toast.success(`Created tray with ${imported} starter${imported === 1 ? "" : "s"}`);
+      toast.success(t("toastCreated", { count: imported }));
       router.push(`/starters/trays/${trayId}`);
     } catch {
-      toast.error("Couldn't create the tray. Please try again.");
+      toast.error(t("toastError"));
     } finally {
       setIsCreating(false);
     }
@@ -85,44 +87,44 @@ export function NewTrayForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">New tray</CardTitle>
+        <CardTitle className="text-lg">{t("title")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="name">Tray name</Label>
-            <Input id="name" placeholder="Tomato tray A" {...register("name")} />
+            <Label htmlFor="name">{t("name")}</Label>
+            <Input id="name" placeholder={t("namePlaceholder")} {...register("name")} />
             {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="datePlanted">Date planted</Label>
+              <Label htmlFor="datePlanted">{t("datePlanted")}</Label>
               <Input id="datePlanted" type="date" {...register("datePlanted")} />
               {errors.datePlanted && (
                 <p className="text-sm text-destructive">{errors.datePlanted.message}</p>
               )}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="location">Location</Label>
-              <Input id="location" placeholder="Windowsill" {...register("location")} />
+              <Label htmlFor="location">{t("location")}</Label>
+              <Input id="location" placeholder={t("locationPlaceholder")} {...register("location")} />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="seedSource">Seed source</Label>
-              <Input id="seedSource" placeholder="Baker Creek" {...register("seedSource")} />
+              <Label htmlFor="seedSource">{t("seedSource")}</Label>
+              <Input id="seedSource" placeholder={t("seedSourcePlaceholder")} {...register("seedSource")} />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="notes">Notes</Label>
-              <Input id="notes" placeholder="Optional" {...register("notes")} />
+              <Label htmlFor="notes">{t("notes")}</Label>
+              <Input id="notes" placeholder={t("notesPlaceholder")} {...register("notes")} />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="rows">Rows</Label>
+              <Label htmlFor="rows">{t("rows")}</Label>
               <Input
                 id="rows"
                 type="number"
@@ -133,7 +135,7 @@ export function NewTrayForm() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="cols">Columns</Label>
+              <Label htmlFor="cols">{t("columns")}</Label>
               <Input
                 id="cols"
                 type="number"
@@ -146,7 +148,7 @@ export function NewTrayForm() {
           </div>
 
           <div>
-            <Label>Cells — {filledCount} filled</Label>
+            <Label>{t("cellsFilled", { count: filledCount })}</Label>
             <div
               className="mt-2 grid gap-1.5"
               style={{ gridTemplateColumns: `repeat(${cols}, minmax(7rem, 1fr))` }}
@@ -168,7 +170,7 @@ export function NewTrayForm() {
           <div className="flex justify-end pt-2">
             <Button type="submit" disabled={isCreating || filledCount === 0}>
               {isCreating && <Loader2 className="h-4 w-4 animate-spin" />}
-              Create tray with {filledCount} starter{filledCount === 1 ? "" : "s"}
+              {t("createButton", { count: filledCount })}
             </Button>
           </div>
         </form>

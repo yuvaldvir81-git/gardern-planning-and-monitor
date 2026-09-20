@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SeedNameCombobox } from "../../seed-name-combobox";
@@ -32,6 +33,8 @@ export function EditableTrayGrid({
   seedNames: string[];
   onDone: () => void;
 }) {
+  const t = useTranslations("editableTrayGrid");
+  const tCommon = useTranslations("common");
   const [initial] = useState(() => buildGrid(rows, cols, starters));
   const [grid, setGrid] = useState(initial);
   const [isSaving, setIsSaving] = useState(false);
@@ -61,13 +64,16 @@ export function EditableTrayGrid({
       }
       const { updated, created } = await updateTrayCells(trayId, changes);
       toast.success(
-        [updated ? `updated ${updated}` : "", created ? `added ${created}` : ""]
+        [
+          updated ? t("updated", { count: updated }) : "",
+          created ? t("added", { count: created }) : "",
+        ]
           .filter(Boolean)
-          .join(", ") || "No changes"
+          .join(", ") || t("noChanges")
       );
       onDone();
     } catch {
-      toast.error("Couldn't save changes");
+      toast.error(t("saveError"));
     } finally {
       setIsSaving(false);
     }
@@ -93,11 +99,11 @@ export function EditableTrayGrid({
       </div>
       <div className="flex justify-end gap-2">
         <Button variant="outline" onClick={onDone} disabled={isSaving}>
-          Cancel
+          {tCommon("cancel")}
         </Button>
         <Button onClick={handleSave} disabled={isSaving}>
           {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
-          Save changes
+          {tCommon("saveChanges")}
         </Button>
       </div>
     </div>

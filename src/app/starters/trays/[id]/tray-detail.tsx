@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,8 @@ export function TrayDetail({
   metadataByName: Record<string, SeedMetadataSummary>;
 }) {
   const router = useRouter();
+  const t = useTranslations("trayDetail");
+  const tCommon = useTranslations("common");
   const [isEditingCells, setIsEditingCells] = useState(false);
   const [addPosition, setAddPosition] = useState<{ rowIndex: number; colIndex: number } | null>(
     null
@@ -48,10 +51,10 @@ export function TrayDetail({
   async function handleDelete() {
     try {
       await deleteTray(tray.id);
-      toast.success("Tray deleted");
+      toast.success(t("toastDeleted"));
       router.push("/starters");
     } catch {
-      toast.error("Failed to delete tray");
+      toast.error(t("toastDeleteFailed"));
     }
   }
 
@@ -64,7 +67,7 @@ export function TrayDetail({
           <div>
             <CardTitle className="text-xl">{tray.name}</CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
-              {tray.rows} × {tray.cols} tray — {filledCount} starter{filledCount === 1 ? "" : "s"}
+              {t("summary", { rows: tray.rows, cols: tray.cols, count: filledCount })}
             </p>
           </div>
           <div className="flex items-center gap-1">
@@ -75,7 +78,7 @@ export function TrayDetail({
                 router.refresh();
               }}
               trigger={
-                <Button variant="ghost" size="icon" aria-label="Edit tray">
+                <Button variant="ghost" size="icon" aria-label={t("editAriaLabel")}>
                   <Pencil className="h-4 w-4" />
                 </Button>
               }
@@ -83,22 +86,21 @@ export function TrayDetail({
             <AlertDialog>
               <AlertDialogTrigger
                 render={
-                  <Button variant="ghost" size="icon" aria-label="Delete tray">
+                  <Button variant="ghost" size="icon" aria-label={t("deleteAriaLabel")}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 }
               />
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Delete this tray?</AlertDialogTitle>
+                  <AlertDialogTitle>{t("deleteTitle")}</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This removes &quot;{tray.name}&quot; and every starter and growth log in it.
-                    This can&apos;t be undone.
+                    {t("deleteDescription", { name: tray.name })}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                  <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete}>{tCommon("delete")}</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
@@ -106,20 +108,20 @@ export function TrayDetail({
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
           <div>
-            <p className="text-muted-foreground">Date planted</p>
+            <p className="text-muted-foreground">{t("datePlanted")}</p>
             <p>{tray.datePlanted}</p>
           </div>
           <div>
-            <p className="text-muted-foreground">Seed source</p>
+            <p className="text-muted-foreground">{t("seedSource")}</p>
             <p>{tray.seedSource || "—"}</p>
           </div>
           <div>
-            <p className="text-muted-foreground">Location</p>
+            <p className="text-muted-foreground">{t("location")}</p>
             <p>{tray.location || "—"}</p>
           </div>
           {tray.notes && (
             <div className="col-span-full">
-              <p className="text-muted-foreground">Notes</p>
+              <p className="text-muted-foreground">{t("notes")}</p>
               <p className="whitespace-pre-wrap">{tray.notes}</p>
             </div>
           )}
@@ -128,10 +130,10 @@ export function TrayDetail({
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">Grid</CardTitle>
+          <CardTitle className="text-lg">{t("grid")}</CardTitle>
           {!isEditingCells && (
             <Button variant="outline" size="sm" onClick={() => setIsEditingCells(true)}>
-              Edit cells
+              {t("editCells")}
             </Button>
           )}
         </CardHeader>
@@ -157,10 +159,7 @@ export function TrayDetail({
                 metadataByName={metadataByName}
                 onEmptyCellClick={(rowIndex, colIndex) => setAddPosition({ rowIndex, colIndex })}
               />
-              <p className="mt-3 text-xs text-muted-foreground">
-                Click a filled cell to open its growth log, or an empty one to add a seed there.
-                Cells with a dot have seed metadata — hover to see it.
-              </p>
+              <p className="mt-3 text-xs text-muted-foreground">{t("gridHint")}</p>
             </>
           )}
         </CardContent>

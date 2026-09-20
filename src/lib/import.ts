@@ -1,14 +1,14 @@
 import { starterStatusLabels, starterStatusValues } from "@/lib/validations";
 
 export const importFieldDefs = [
-  { key: "name", label: "Name", required: true },
-  { key: "species", label: "Species", required: false },
-  { key: "variety", label: "Variety", required: false },
-  { key: "seedSource", label: "Seed source", required: false },
-  { key: "datePlanted", label: "Date planted", required: true },
-  { key: "location", label: "Location", required: false },
-  { key: "status", label: "Status", required: false },
-  { key: "notes", label: "Notes", required: false },
+  { key: "name", required: true },
+  { key: "species", required: false },
+  { key: "variety", required: false },
+  { key: "seedSource", required: false },
+  { key: "datePlanted", required: true },
+  { key: "location", required: false },
+  { key: "status", required: false },
+  { key: "notes", required: false },
 ] as const;
 
 export type ImportFieldKey = (typeof importFieldDefs)[number]["key"];

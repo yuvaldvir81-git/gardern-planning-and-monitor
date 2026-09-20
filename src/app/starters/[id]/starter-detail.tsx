@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +19,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { starterStatusLabels } from "@/lib/validations";
 import { formatGerminationRange, type SeedMetadataSummary } from "@/lib/seed-metadata";
 import type { growthEntries, plantStarters } from "@/db/schema";
 import { addGrowthEntry, deleteGrowthEntry, updateStarter } from "../actions";
@@ -38,14 +38,17 @@ export function StarterDetail({
   seedMetadata?: SeedMetadataSummary;
 }) {
   const router = useRouter();
+  const t = useTranslations("starterDetail");
+  const tCommon = useTranslations("common");
+  const tStatus = useTranslations("status");
 
   async function handleDeleteEntry(entryId: string) {
     try {
       await deleteGrowthEntry(entryId, starter.id);
-      toast.success("Entry deleted");
+      toast.success(t("toastEntryDeleted"));
       router.refresh();
     } catch {
-      toast.error("Failed to delete entry");
+      toast.error(t("toastEntryDeleteFailed"));
     }
   }
 
@@ -56,12 +59,11 @@ export function StarterDetail({
           <div>
             <CardTitle className="text-xl">{starter.name}</CardTitle>
             <p className="mt-1 text-sm text-muted-foreground">
-              {[starter.species, starter.variety].filter(Boolean).join(" — ") ||
-                "No species set"}
+              {[starter.species, starter.variety].filter(Boolean).join(" — ") || t("noSpecies")}
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary">{starterStatusLabels[starter.status]}</Badge>
+            <Badge variant="secondary">{tStatus(starter.status)}</Badge>
             <StarterFormDialog
               starter={starter}
               onSubmit={async (values) => {
@@ -70,7 +72,7 @@ export function StarterDetail({
               }}
               trigger={
                 <Button variant="outline" size="sm">
-                  Edit
+                  {t("edit")}
                 </Button>
               }
             />
@@ -82,26 +84,26 @@ export function StarterDetail({
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={starter.photoUrl}
-                alt={`${starter.name} seed package`}
+                alt={t("photoAlt", { name: starter.name })}
                 className="h-32 w-32 rounded-md border object-cover"
               />
             </div>
           )}
           <div>
-            <p className="text-muted-foreground">Date planted</p>
+            <p className="text-muted-foreground">{t("datePlanted")}</p>
             <p>{starter.datePlanted}</p>
           </div>
           <div>
-            <p className="text-muted-foreground">Seed source</p>
+            <p className="text-muted-foreground">{t("seedSource")}</p>
             <p>{starter.seedSource || "—"}</p>
           </div>
           <div>
-            <p className="text-muted-foreground">Location</p>
+            <p className="text-muted-foreground">{t("location")}</p>
             <p>{starter.location || "—"}</p>
           </div>
           {starter.notes && (
             <div className="col-span-full">
-              <p className="text-muted-foreground">Notes</p>
+              <p className="text-muted-foreground">{t("notes")}</p>
               <p className="whitespace-pre-wrap">{starter.notes}</p>
             </div>
           )}
@@ -111,23 +113,23 @@ export function StarterDetail({
       {seedMetadata && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Seed info</CardTitle>
+            <CardTitle className="text-lg">{t("seedInfo")}</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
             <div>
-              <p className="text-muted-foreground">Germinate</p>
+              <p className="text-muted-foreground">{t("germinate")}</p>
               <p>{formatGerminationRange(seedMetadata) ?? "—"}</p>
             </div>
             <div>
-              <p className="text-muted-foreground">Maturity</p>
+              <p className="text-muted-foreground">{t("maturity")}</p>
               <p>{seedMetadata.daysToMaturity ? `${seedMetadata.daysToMaturity}d` : "—"}</p>
             </div>
             <div>
-              <p className="text-muted-foreground">Sun</p>
+              <p className="text-muted-foreground">{t("sun")}</p>
               <p>{seedMetadata.sunRequirement || "—"}</p>
             </div>
             <div>
-              <p className="text-muted-foreground">Spacing</p>
+              <p className="text-muted-foreground">{t("spacing")}</p>
               <p>{seedMetadata.spacingCm ? `${seedMetadata.spacingCm} cm` : "—"}</p>
             </div>
           </CardContent>
@@ -136,7 +138,7 @@ export function StarterDetail({
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">Growth log</CardTitle>
+          <CardTitle className="text-lg">{t("growthLog")}</CardTitle>
           <GrowthEntryDialog
             onSubmit={async (values) => {
               await addGrowthEntry(starter.id, values);
@@ -146,9 +148,7 @@ export function StarterDetail({
         </CardHeader>
         <CardContent>
           {entries.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              No growth entries yet. Add one to start tracking progress.
-            </p>
+            <p className="py-8 text-center text-sm text-muted-foreground">{t("emptyLog")}</p>
           ) : (
             <ul className="space-y-4">
               {entries.map((entry, i) => (
@@ -157,9 +157,7 @@ export function StarterDetail({
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{entry.entryDate}</span>
-                        {entry.stage && (
-                          <Badge variant="outline">{starterStatusLabels[entry.stage]}</Badge>
-                        )}
+                        {entry.stage && <Badge variant="outline">{tStatus(entry.stage)}</Badge>}
                         {entry.heightCm && (
                           <span className="text-sm text-muted-foreground">
                             {entry.heightCm} cm
@@ -175,23 +173,26 @@ export function StarterDetail({
                     <AlertDialog>
                       <AlertDialogTrigger
                         render={
-                          <Button variant="ghost" size="icon" aria-label="Delete entry">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={t("deleteEntryAriaLabel")}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         }
                       />
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Delete this entry?</AlertDialogTitle>
+                          <AlertDialogTitle>{t("deleteEntryTitle")}</AlertDialogTitle>
                           <AlertDialogDescription>
-                            This removes the {entry.entryDate} growth log entry. This can&apos;t
-                            be undone.
+                            {t("deleteEntryDescription", { date: entry.entryDate })}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
                           <AlertDialogAction onClick={() => handleDeleteEntry(entry.id)}>
-                            Delete
+                            {tCommon("delete")}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>

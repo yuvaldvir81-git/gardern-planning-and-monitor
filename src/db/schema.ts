@@ -21,6 +21,15 @@ export const starterStatus = pgEnum("starter_status", [
   "dead",
 ]);
 
+export const appLocale = pgEnum("app_locale", ["en", "he"]);
+
+export const userSettings = pgTable("user_settings", {
+  userId: text("user_id").primaryKey(),
+  language: appLocale("language").notNull().default("en"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const starterTrays = pgTable("starter_trays", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").notNull(),

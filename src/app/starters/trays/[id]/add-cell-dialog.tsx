@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +31,7 @@ export function AddCellDialog({
   onOpenChange: (open: boolean) => void;
   onAdded: () => void;
 }) {
+  const t = useTranslations("addCell");
   const [name, setName] = useState("");
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -41,12 +43,12 @@ export function AddCellDialog({
       await updateTrayCells(trayId, [
         { rowIndex: position.rowIndex, colIndex: position.colIndex, name, photoUrl },
       ]);
-      toast.success("Starter added");
+      toast.success(t("toastAdded"));
       setName("");
       setPhotoUrl(null);
       onAdded();
     } catch {
-      toast.error("Couldn't add starter");
+      toast.error(t("toastError"));
     } finally {
       setIsSaving(false);
     }
@@ -65,29 +67,29 @@ export function AddCellDialog({
     >
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>Add a seed</DialogTitle>
+          <DialogTitle>{t("title")}</DialogTitle>
           <DialogDescription>
-            {position && `Row ${position.rowIndex + 1}, column ${position.colIndex + 1}`}
+            {position && t("position", { row: position.rowIndex + 1, col: position.colIndex + 1 })}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-2">
-          <Label htmlFor="cell-name">Seed name</Label>
+          <Label htmlFor="cell-name">{t("seedName")}</Label>
           <SeedNameCombobox
             id="cell-name"
             value={name}
             onChange={setName}
             suggestions={seedNames}
-            placeholder="Cherokee Purple"
+            placeholder={t("seedNamePlaceholder")}
           />
         </div>
         <div className="grid gap-2">
-          <Label>Seed package photo</Label>
+          <Label>{t("photo")}</Label>
           <PhotoCaptureInput value={photoUrl} onChange={setPhotoUrl} />
         </div>
         <DialogFooter>
           <Button onClick={handleAdd} disabled={isSaving || !name.trim()}>
             {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
-            Add
+            {t("add")}
           </Button>
         </DialogFooter>
       </DialogContent>

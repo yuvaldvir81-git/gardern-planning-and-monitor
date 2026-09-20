@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrayGrid } from "./tray-grid";
 import type { getTraysForUser } from "./trays/actions";
@@ -6,7 +7,7 @@ import type { SeedMetadataSummary } from "@/lib/seed-metadata";
 
 type Trays = Awaited<ReturnType<typeof getTraysForUser>>;
 
-export function TraysSection({
+export async function TraysSection({
   trays,
   metadataByName,
 }: {
@@ -15,9 +16,11 @@ export function TraysSection({
 }) {
   if (trays.length === 0) return null;
 
+  const t = await getTranslations("traysSection");
+
   return (
     <div className="mb-8 space-y-4">
-      <h2 className="text-lg font-semibold tracking-tight">Trays</h2>
+      <h2 className="text-lg font-semibold tracking-tight">{t("heading")}</h2>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {trays.map((tray) => (
           <Link key={tray.id} href={`/starters/trays/${tray.id}`}>
@@ -25,8 +28,11 @@ export function TraysSection({
               <CardHeader>
                 <CardTitle className="text-base">{tray.name}</CardTitle>
                 <p className="text-xs text-muted-foreground">
-                  {tray.rows} × {tray.cols} — {tray.starters.length} starter
-                  {tray.starters.length === 1 ? "" : "s"}
+                  {t("summary", {
+                    rows: tray.rows,
+                    cols: tray.cols,
+                    count: tray.starters.length,
+                  })}
                 </p>
               </CardHeader>
               <CardContent>

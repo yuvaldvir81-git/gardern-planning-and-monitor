@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,7 +27,6 @@ import {
 } from "@/components/ui/select";
 import {
   growthEntryFormSchema,
-  starterStatusLabels,
   starterStatusValues,
   type GrowthEntryFormValues,
 } from "@/lib/validations";
@@ -36,6 +36,9 @@ export function GrowthEntryDialog({
 }: {
   onSubmit: (values: GrowthEntryFormValues) => Promise<void>;
 }) {
+  const t = useTranslations("growthEntry");
+  const tCommon = useTranslations("common");
+  const tStatus = useTranslations("status");
   const [open, setOpen] = useState(false);
   const {
     register,
@@ -56,11 +59,11 @@ export function GrowthEntryDialog({
   async function submit(values: GrowthEntryFormValues) {
     try {
       await onSubmit(values);
-      toast.success("Growth entry added");
+      toast.success(t("toastAdded"));
       setOpen(false);
       reset();
     } catch {
-      toast.error("Something went wrong. Please try again.");
+      toast.error(tCommon("genericError"));
     }
   }
 
@@ -72,23 +75,23 @@ export function GrowthEntryDialog({
         if (!next) reset();
       }}
     >
-      <DialogTrigger render={<Button size="sm">Add entry</Button>} />
+      <DialogTrigger render={<Button size="sm">{t("addEntry")}</Button>} />
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add a growth entry</DialogTitle>
-          <DialogDescription>Log how this starter looks today.</DialogDescription>
+          <DialogTitle>{t("dialogTitle")}</DialogTitle>
+          <DialogDescription>{t("description")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(submit)} className="grid gap-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="entryDate">Date</Label>
+              <Label htmlFor="entryDate">{t("date")}</Label>
               <Input id="entryDate" type="date" {...register("entryDate")} />
               {errors.entryDate && (
                 <p className="text-sm text-destructive">{errors.entryDate.message}</p>
               )}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="heightCm">Height (cm)</Label>
+              <Label htmlFor="heightCm">{t("heightCm")}</Label>
               <Input id="heightCm" type="number" step="0.1" {...register("heightCm")} />
               {errors.heightCm && (
                 <p className="text-sm text-destructive">{errors.heightCm.message}</p>
@@ -97,19 +100,19 @@ export function GrowthEntryDialog({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="stage">Stage (optional — updates current status)</Label>
+            <Label htmlFor="stage">{t("stage")}</Label>
             <Controller
               control={control}
               name="stage"
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger id="stage" className="w-full">
-                    <SelectValue placeholder="No change" />
+                    <SelectValue placeholder={t("noChange")} />
                   </SelectTrigger>
                   <SelectContent>
                     {starterStatusValues.map((s) => (
                       <SelectItem key={s} value={s}>
-                        {starterStatusLabels[s]}
+                        {tStatus(s)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -119,13 +122,13 @@ export function GrowthEntryDialog({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="notes">Notes</Label>
+            <Label htmlFor="notes">{t("notes")}</Label>
             <Textarea id="notes" rows={3} {...register("notes")} />
           </div>
 
           <DialogFooter>
             <Button type="submit" disabled={isSubmitting}>
-              Add entry
+              {t("addEntry")}
             </Button>
           </DialogFooter>
         </form>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -31,6 +32,8 @@ export function TrayEditDialog({
   trigger: React.ReactElement;
   onSubmit: (values: TrayFormValues) => Promise<void>;
 }) {
+  const t = useTranslations("trayEdit");
+  const tCommon = useTranslations("common");
   const [open, setOpen] = useState(false);
   const {
     register,
@@ -51,10 +54,10 @@ export function TrayEditDialog({
   async function submit(values: TrayFormValues) {
     try {
       await onSubmit(values);
-      toast.success("Tray updated");
+      toast.success(t("toastUpdated"));
       setOpen(false);
     } catch {
-      toast.error("Something went wrong. Please try again.");
+      toast.error(tCommon("genericError"));
     }
   }
 
@@ -69,39 +72,39 @@ export function TrayEditDialog({
       <DialogTrigger render={trigger} />
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Edit tray</DialogTitle>
-          <DialogDescription>Update this tray&apos;s details.</DialogDescription>
+          <DialogTitle>{t("title")}</DialogTitle>
+          <DialogDescription>{t("description")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(submit)} className="grid gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="tray-name">Tray name</Label>
+            <Label htmlFor="tray-name">{t("name")}</Label>
             <Input id="tray-name" {...register("name")} />
             {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="tray-datePlanted">Date planted</Label>
+              <Label htmlFor="tray-datePlanted">{t("datePlanted")}</Label>
               <Input id="tray-datePlanted" type="date" {...register("datePlanted")} />
               {errors.datePlanted && (
                 <p className="text-sm text-destructive">{errors.datePlanted.message}</p>
               )}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="tray-location">Location</Label>
+              <Label htmlFor="tray-location">{t("location")}</Label>
               <Input id="tray-location" {...register("location")} />
             </div>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="tray-seedSource">Seed source</Label>
+            <Label htmlFor="tray-seedSource">{t("seedSource")}</Label>
             <Input id="tray-seedSource" {...register("seedSource")} />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="tray-notes">Notes</Label>
+            <Label htmlFor="tray-notes">{t("notes")}</Label>
             <Textarea id="tray-notes" rows={3} {...register("notes")} />
           </div>
           <DialogFooter>
             <Button type="submit" disabled={isSubmitting}>
-              Save changes
+              {tCommon("saveChanges")}
             </Button>
           </DialogFooter>
         </form>

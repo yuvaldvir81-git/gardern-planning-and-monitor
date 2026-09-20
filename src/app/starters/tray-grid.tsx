@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { starterStatusColors } from "@/lib/validations";
@@ -21,15 +24,16 @@ function MetadataTooltipContent({
   age: number;
   metadata: SeedMetadataSummary;
 }) {
+  const t = useTranslations("trayGrid");
   const germination = formatGerminationRange(metadata);
   return (
     <div className="space-y-0.5">
       <p className="font-medium">{name}</p>
-      <p>Planted {age}d ago</p>
-      {germination && <p>Germinate: {germination}</p>}
-      {metadata.daysToMaturity && <p>Maturity: {metadata.daysToMaturity}d</p>}
-      {metadata.sunRequirement && <p>Sun: {metadata.sunRequirement}</p>}
-      {metadata.spacingCm && <p>Spacing: {metadata.spacingCm} cm</p>}
+      <p>{t("plantedAgo", { days: age })}</p>
+      {germination && <p>{t("germinate", { range: germination })}</p>}
+      {metadata.daysToMaturity && <p>{t("maturity", { days: metadata.daysToMaturity })}</p>}
+      {metadata.sunRequirement && <p>{t("sun", { value: metadata.sunRequirement })}</p>}
+      {metadata.spacingCm && <p>{t("spacing", { value: metadata.spacingCm })}</p>}
     </div>
   );
 }
@@ -54,6 +58,7 @@ export function TrayGrid({
   /** Seed metadata keyed by starter name — filled cells with a matching entry show it in a hover tooltip. */
   metadataByName?: Record<string, SeedMetadataSummary>;
 }) {
+  const t = useTranslations("trayGrid");
   const cellByPosition = new Map(starters.map((s) => [`${s.rowIndex}:${s.colIndex}`, s]));
   const cellSize = size === "sm" ? "h-9" : "h-14";
 
@@ -71,7 +76,7 @@ export function TrayGrid({
                 <button
                   key={`${r}:${c}`}
                   type="button"
-                  aria-label={`Add a starter at row ${r + 1}, column ${c + 1}`}
+                  aria-label={t("addCellAriaLabel", { row: r + 1, col: c + 1 })}
                   onClick={() => onEmptyCellClick(r, c)}
                   className={cn(
                     cellSize,
@@ -103,7 +108,7 @@ export function TrayGrid({
               <span className="line-clamp-1 break-words">{starter.name}</span>
               <span className="text-[9px] leading-none opacity-70">{age}d</span>
               {metadata && (
-                <span className="absolute top-0.5 right-0.5 size-1.5 rounded-full bg-current opacity-60" />
+                <span className="absolute top-0.5 end-0.5 size-1.5 rounded-full bg-current opacity-60" />
               )}
             </>
           );

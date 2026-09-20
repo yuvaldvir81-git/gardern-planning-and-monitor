@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Loader2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,6 +40,8 @@ const NO_COLUMN = "__none__";
 type Step = "upload" | "choose-sheet" | "map" | "preview";
 
 export function ImportWizard({ onBack }: { onBack: () => void }) {
+  const t = useTranslations("importTable");
+  const tStatus = useTranslations("status");
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<Step>("upload");
@@ -82,7 +85,7 @@ export function ImportWizard({ onBack }: { onBack: () => void }) {
       setTruncated(result.truncated);
       setStep("map");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't read that file");
+      toast.error(err instanceof Error ? err.message : t("toastReadError"));
     } finally {
       setIsParsing(false);
     }
@@ -104,10 +107,10 @@ export function ImportWizard({ onBack }: { onBack: () => void }) {
     setIsImporting(true);
     try {
       const { imported } = await importStarters(validRows.map((r) => r.values));
-      toast.success(`Imported ${imported} starter${imported === 1 ? "" : "s"}`);
+      toast.success(t("toastImported", { count: imported }));
       router.push("/starters");
     } catch {
-      toast.error("Import failed. Please try again.");
+      toast.error(t("toastImportFailed"));
     } finally {
       setIsImporting(false);
     }
@@ -117,13 +120,10 @@ export function ImportWizard({ onBack }: { onBack: () => void }) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Import from a spreadsheet</CardTitle>
+          <CardTitle className="text-lg">{t("uploadTitle")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Upload an Excel (.xlsx) or CSV file exported from a spreadsheet app or Google
-            Sheets (File → Download). You&apos;ll match up columns on the next step.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("uploadDescription")}</p>
           <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-10 text-center">
             {isParsing ? (
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -145,20 +145,20 @@ export function ImportWizard({ onBack }: { onBack: () => void }) {
                 disabled={isParsing}
                 onClick={() => fileInputRef.current?.click()}
               >
-                Choose file
+                {t("chooseFile")}
               </Button>
-              <p className="mt-2 text-xs text-muted-foreground">.xlsx or .csv, up to 500 rows</p>
+              <p className="mt-2 text-xs text-muted-foreground">{t("fileHint")}</p>
             </div>
           </div>
           <p className="text-sm text-muted-foreground">
-            Not sure about the format?{" "}
+            {t("templateHint")}{" "}
             <a href="/starter-import-template.csv" download className="underline">
-              Download a template
+              {t("downloadTemplate")}
             </a>
             .
           </p>
           <Button variant="ghost" onClick={onBack}>
-            Back
+            {t("back")}
           </Button>
         </CardContent>
       </Card>
@@ -169,11 +169,13 @@ export function ImportWizard({ onBack }: { onBack: () => void }) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Choose a sheet — {pendingFile?.name}</CardTitle>
+          <CardTitle className="text-lg">
+            {t("chooseSheetTitle", { fileName: pendingFile?.name ?? "" })}
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            This workbook has {sheetNames.length} sheets. Pick the one with your starters.
+            {t("chooseSheetDescription", { count: sheetNames.length })}
           </p>
           <div className="grid gap-2 sm:max-w-xs">
             {sheetNames.map((name) => (
@@ -197,7 +199,7 @@ export function ImportWizard({ onBack }: { onBack: () => void }) {
               setStep("upload");
             }}
           >
-            Back
+            {t("back")}
           </Button>
         </CardContent>
       </Card>
@@ -208,19 +210,20 @@ export function ImportWizard({ onBack }: { onBack: () => void }) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Match columns — {fileName}</CardTitle>
+          <CardTitle className="text-lg">{t("mapTitle", { fileName })}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            {rawRows.length} row{rawRows.length === 1 ? "" : "s"} detected
-            {truncated ? " (showing the first 500)" : ""}. Match each field to a column from
-            your file.
+            {t("mapDescription", {
+              count: rawRows.length,
+              truncated: truncated ? "true" : "false",
+            })}
           </p>
           <div className="grid gap-4 sm:grid-cols-2">
             {importFieldDefs.map((field) => (
               <div key={field.key} className="grid gap-2">
                 <Label>
-                  {field.label}
+                  {t(`fields.${field.key}`)}
                   {field.required && <span className="text-destructive"> *</span>}
                 </Label>
                 <Select
@@ -237,13 +240,13 @@ export function ImportWizard({ onBack }: { onBack: () => void }) {
                   }
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Not mapped" />
+                    <SelectValue placeholder={t("notMapped")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={NO_COLUMN}>Don&apos;t import</SelectItem>
+                    <SelectItem value={NO_COLUMN}>{t("dontImport")}</SelectItem>
                     {headers.map((header, i) => (
                       <SelectItem key={i} value={String(i)}>
-                        {header || `Column ${i + 1}`}
+                        {header || t("columnFallback", { index: i + 1 })}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -253,9 +256,9 @@ export function ImportWizard({ onBack }: { onBack: () => void }) {
           </div>
           <div className="flex justify-between pt-2">
             <Button variant="outline" onClick={() => setStep("upload")}>
-              Back
+              {t("back")}
             </Button>
-            <Button onClick={() => setStep("preview")}>Preview import</Button>
+            <Button onClick={() => setStep("preview")}>{t("previewImport")}</Button>
           </div>
         </CardContent>
       </Card>
@@ -265,24 +268,22 @@ export function ImportWizard({ onBack }: { onBack: () => void }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Review — {fileName}</CardTitle>
+        <CardTitle className="text-lg">{t("reviewTitle", { fileName })}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          {validRows.length} of {normalizedRows.length} row
-          {normalizedRows.length === 1 ? "" : "s"} look good and will be imported. Rows with
-          errors are skipped.
+          {t("reviewDescription", { valid: validRows.length, total: normalizedRows.length })}
         </p>
         <div className="max-h-96 overflow-auto rounded-lg border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Row</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Species / Variety</TableHead>
-                <TableHead>Date planted</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Result</TableHead>
+                <TableHead>{t("colRow")}</TableHead>
+                <TableHead>{t("colName")}</TableHead>
+                <TableHead>{t("colSpeciesVariety")}</TableHead>
+                <TableHead>{t("colDatePlanted")}</TableHead>
+                <TableHead>{t("colStatus")}</TableHead>
+                <TableHead>{t("colResult")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -294,10 +295,10 @@ export function ImportWizard({ onBack }: { onBack: () => void }) {
                     {[row.values.species, row.values.variety].filter(Boolean).join(" — ") || "—"}
                   </TableCell>
                   <TableCell>{row.values.datePlanted || "—"}</TableCell>
-                  <TableCell>{row.values.status}</TableCell>
+                  <TableCell>{tStatus(row.values.status)}</TableCell>
                   <TableCell>
                     {row.errors.length === 0 ? (
-                      <Badge variant="secondary">Ready</Badge>
+                      <Badge variant="secondary">{t("ready")}</Badge>
                     ) : (
                       <span className="text-sm text-destructive">{row.errors.join("; ")}</span>
                     )}
@@ -309,15 +310,15 @@ export function ImportWizard({ onBack }: { onBack: () => void }) {
         </div>
         <div className="flex justify-between pt-2">
           <Button variant="outline" onClick={() => setStep("map")} disabled={isImporting}>
-            Back to mapping
+            {t("backToMapping")}
           </Button>
           <div className="flex gap-2">
             <Button variant="ghost" render={<Link href="/starters" />}>
-              Cancel
+              {t("cancel")}
             </Button>
             <Button onClick={handleImport} disabled={validRows.length === 0 || isImporting}>
               {isImporting && <Loader2 className="h-4 w-4 animate-spin" />}
-              Import {validRows.length} starter{validRows.length === 1 ? "" : "s"}
+              {t("importButton", { count: validRows.length })}
             </Button>
           </div>
         </div>

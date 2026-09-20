@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -31,6 +32,8 @@ export function SeedTypeEditDialog({
   trigger: React.ReactElement;
   onSubmit: (values: SeedTypeMetadataFormValues) => Promise<void>;
 }) {
+  const t = useTranslations("seedTypeEdit");
+  const tCommon = useTranslations("common");
   const [open, setOpen] = useState(false);
   const {
     register,
@@ -52,10 +55,10 @@ export function SeedTypeEditDialog({
   async function submit(values: SeedTypeMetadataFormValues) {
     try {
       await onSubmit(values);
-      toast.success("Seed metadata updated");
+      toast.success(t("toastUpdated"));
       setOpen(false);
     } catch {
-      toast.error("Something went wrong. Please try again.");
+      toast.error(tCommon("genericError"));
     }
   }
 
@@ -71,12 +74,12 @@ export function SeedTypeEditDialog({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{seedType.name}</DialogTitle>
-          <DialogDescription>Edit growing metadata for this seed type.</DialogDescription>
+          <DialogDescription>{t("description")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(submit)} className="grid gap-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="daysToGerminateMin">Germinate — min days</Label>
+              <Label htmlFor="daysToGerminateMin">{t("germinateMin")}</Label>
               <Input
                 id="daysToGerminateMin"
                 type="number"
@@ -87,7 +90,7 @@ export function SeedTypeEditDialog({
               )}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="daysToGerminateMax">Germinate — max days</Label>
+              <Label htmlFor="daysToGerminateMax">{t("germinateMax")}</Label>
               <Input
                 id="daysToGerminateMax"
                 type="number"
@@ -100,14 +103,14 @@ export function SeedTypeEditDialog({
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="daysToMaturity">Days to maturity</Label>
+              <Label htmlFor="daysToMaturity">{t("daysToMaturity")}</Label>
               <Input id="daysToMaturity" type="number" {...register("daysToMaturity")} />
               {errors.daysToMaturity && (
                 <p className="text-sm text-destructive">{errors.daysToMaturity.message}</p>
               )}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="spacingCm">Spacing (cm)</Label>
+              <Label htmlFor="spacingCm">{t("spacingCm")}</Label>
               <Input id="spacingCm" type="number" step="0.1" {...register("spacingCm")} />
               {errors.spacingCm && (
                 <p className="text-sm text-destructive">{errors.spacingCm.message}</p>
@@ -115,16 +118,20 @@ export function SeedTypeEditDialog({
             </div>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="sunRequirement">Sun requirement</Label>
-            <Input id="sunRequirement" placeholder="Full sun" {...register("sunRequirement")} />
+            <Label htmlFor="sunRequirement">{t("sunRequirement")}</Label>
+            <Input
+              id="sunRequirement"
+              placeholder={t("sunRequirementPlaceholder")}
+              {...register("sunRequirement")}
+            />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="seed-notes">Notes</Label>
+            <Label htmlFor="seed-notes">{t("notes")}</Label>
             <Textarea id="seed-notes" rows={3} {...register("notes")} />
           </div>
           <DialogFooter>
             <Button type="submit" disabled={isSubmitting}>
-              Save changes
+              {tCommon("saveChanges")}
             </Button>
           </DialogFooter>
         </form>

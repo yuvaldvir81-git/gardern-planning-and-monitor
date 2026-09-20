@@ -68,7 +68,8 @@ tapping any cell opens — that's the reliable path on mobile, the grid tooltip 
 desktop-only bonus on top of it.
 
 Every filled cell (regardless of whether its seed type has metadata) also shows days
-since planting in the corner — computed from the starter's `date_planted`, not stored.
+since planting on its own line under the name — computed from the starter's
+`date_planted`, not stored.
 
 ## Seed package photos
 
@@ -107,6 +108,31 @@ including manual edits.
 Auth to the AI Gateway is automatic — Vercel injects an OIDC token for deployed
 functions, and `vercel env pull` already pulled `VERCEL_OIDC_TOKEN` into `.env.local`
 for local dev, so no separate `AI_GATEWAY_API_KEY` was needed.
+
+## Language (English / Hebrew)
+
+`/settings` has a language switcher; the choice is stored per user in `user_settings`
+(`language` column) and mirrored into a `NEXT_LOCALE` cookie, which is what actually
+drives rendering on every request via `next-intl` (`src/i18n/request.ts` — no
+`[locale]` URL segment, just a cookie read, defaulting to English until the user has
+ever picked one). Every app string lives in `messages/en.json` / `messages/he.json`;
+components use `useTranslations()` (client) or `getTranslations()` (server).
+
+Hebrew is full RTL, not just translated text: `<html dir="rtl">` is set from the
+resolved locale, which — combined with CSS logical properties — flips flex-row order,
+text alignment, and form-control layout automatically. The handful of physical
+`left`/`right` classes that existed were converted to logical (`start`/`end`)
+equivalents, `shadcn migrate rtl` was run once to convert the shadcn primitives
+(dialog close buttons, dropdown carets, etc.) the same way, and back-arrow icons get
+`rtl:rotate-180` since SVG icons don't mirror on their own. Clerk's own sign-in/sign-up
+widget is localized too via `@clerk/localizations`' `heIL`, driven by the same
+resolved locale.
+
+**Known gap**: form validation error messages (Zod schema messages, e.g. "Name is
+required") and a handful of rare server-thrown error strings (spreadsheet-parsing
+edge cases) are still English-only — translating those requires turning each Zod
+schema into a locale-aware factory, which was scoped out of this pass as a
+meaningfully separate refactor from translating UI chrome.
 
 ## Auth & hosting
 

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { Grid3x3, Plus, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +27,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { starterStatusLabels } from "@/lib/validations";
 import type { plantStarters } from "@/db/schema";
 import { createStarter, deleteStarter } from "./actions";
 import { StarterFormDialog } from "./starter-form-dialog";
@@ -36,29 +36,32 @@ type Starter = typeof plantStarters.$inferSelect;
 export function StartersTable({ starters }: { starters: Starter[] }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const t = useTranslations("starters");
+  const tCommon = useTranslations("common");
+  const tStatus = useTranslations("status");
 
   async function handleDelete(id: string) {
     try {
       await deleteStarter(id);
-      toast.success("Starter deleted");
+      toast.success(t("toastDeleted"));
       startTransition(() => router.refresh());
     } catch {
-      toast.error("Failed to delete starter");
+      toast.error(t("toastDeleteFailed"));
     }
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Plant starters</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
         <div className="flex gap-2">
           <Button variant="outline" render={<Link href="/starters/trays/new" />}>
             <Grid3x3 className="h-4 w-4" />
-            New tray
+            {t("newTray")}
           </Button>
           <Button variant="outline" render={<Link href="/starters/import" />}>
             <Upload className="h-4 w-4" />
-            Import
+            {t("import")}
           </Button>
           <StarterFormDialog
             onSubmit={async (values) => {
@@ -68,7 +71,7 @@ export function StartersTable({ starters }: { starters: Starter[] }) {
             trigger={
               <Button>
                 <Plus className="h-4 w-4" />
-                Add starter
+                {t("addStarter")}
               </Button>
             }
           />
@@ -77,21 +80,19 @@ export function StartersTable({ starters }: { starters: Starter[] }) {
 
       {starters.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed py-16 text-center">
-          <p className="text-muted-foreground">No plant starters yet.</p>
-          <p className="text-sm text-muted-foreground">
-            Add your first seed or starter to begin tracking its growth.
-          </p>
+          <p className="text-muted-foreground">{t("emptyTitle")}</p>
+          <p className="text-sm text-muted-foreground">{t("emptyDescription")}</p>
         </div>
       ) : (
         <div className="rounded-lg border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Species / Variety</TableHead>
-                <TableHead>Date planted</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{t("colName")}</TableHead>
+                <TableHead>{t("colSpeciesVariety")}</TableHead>
+                <TableHead>{t("colDatePlanted")}</TableHead>
+                <TableHead>{t("colLocation")}</TableHead>
+                <TableHead>{t("colStatus")}</TableHead>
                 <TableHead className="w-0" />
               </TableRow>
             </TableHeader>
@@ -111,7 +112,7 @@ export function StartersTable({ starters }: { starters: Starter[] }) {
                     {starter.location || "—"}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{starterStatusLabels[starter.status]}</Badge>
+                    <Badge variant="secondary">{tStatus(starter.status)}</Badge>
                   </TableCell>
                   <TableCell>
                     <AlertDialog>
@@ -120,7 +121,7 @@ export function StartersTable({ starters }: { starters: Starter[] }) {
                           <Button
                             variant="ghost"
                             size="icon"
-                            aria-label="Delete starter"
+                            aria-label={t("deleteAriaLabel")}
                             disabled={isPending}
                             onClick={(e) => e.stopPropagation()}
                           >
@@ -130,16 +131,15 @@ export function StartersTable({ starters }: { starters: Starter[] }) {
                       />
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Delete this starter?</AlertDialogTitle>
+                          <AlertDialogTitle>{t("deleteTitle")}</AlertDialogTitle>
                           <AlertDialogDescription>
-                            This removes &quot;{starter.name}&quot; and its entire growth log.
-                            This can&apos;t be undone.
+                            {t("deleteDescription", { name: starter.name })}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
                           <AlertDialogAction onClick={() => handleDelete(starter.id)}>
-                            Delete
+                            {tCommon("delete")}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
