@@ -118,9 +118,16 @@ for local dev, so no separate `AI_GATEWAY_API_KEY` was needed.
 `/settings` has a language switcher; the choice is stored per user in `user_settings`
 (`language` column) and mirrored into a `NEXT_LOCALE` cookie, which is what actually
 drives rendering on every request via `next-intl` (`src/i18n/request.ts` — no
-`[locale]` URL segment, just a cookie read, defaulting to English until the user has
-ever picked one). Every app string lives in `messages/en.json` / `messages/he.json`;
-components use `useTranslations()` (client) or `getTranslations()` (server).
+`[locale]` URL segment, just a cookie read, defaulting to English). Every app string
+lives in `messages/en.json` / `messages/he.json`; components use `useTranslations()`
+(client) or `getTranslations()` (server).
+
+The cookie is per-browser, so a second device (e.g. a phone) with no cookie would
+otherwise render English even though the signed-in account's stored preference is
+Hebrew — `src/proxy.ts` closes that gap: on any request without the cookie, it looks
+up the signed-in user's `user_settings.language` and sets the cookie from it, so a
+new device self-corrects to the account's language after its first request rather
+than requiring a fresh visit to `/settings` on every device.
 
 Hebrew is full RTL, not just translated text: `<html dir="rtl">` is set from the
 resolved locale, which — combined with CSS logical properties — flips flex-row order,

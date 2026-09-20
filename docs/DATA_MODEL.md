@@ -57,10 +57,11 @@ hand on `/starters/seeds` (see
 One row per user (`user_id` is the primary key — no separate `id`). Currently just
 `language` (`app_locale` enum: `en` | `he`), defaulting to `en`. This is the durable
 per-account record; the `NEXT_LOCALE` cookie is what actually drives rendering on any
-given request (see [FEATURES.md](./FEATURES.md#language-english--hebrew)) — the two
-are only synced when the user explicitly changes their language on `/settings`, so a
-fresh browser session with no cookie renders English even if the account's stored
-preference is Hebrew, until they revisit Settings.
+given request (see [FEATURES.md](./FEATURES.md#language-english--hebrew)). The two are
+written together whenever the user changes their language on `/settings`, and
+`src/proxy.ts` reads this table to (re)set the cookie on any request from a
+browser/device that doesn't have it yet — so a fresh browser picks up the account's
+saved language automatically instead of defaulting to English.
 
 ## Why not the `xlsx` package
 
