@@ -30,6 +30,8 @@ export function NewTrayForm() {
   const router = useRouter();
   const [rows, setRows] = useState(4);
   const [cols, setCols] = useState(6);
+  const [rowsInput, setRowsInput] = useState("4");
+  const [colsInput, setColsInput] = useState("6");
   const [grid, setGrid] = useState<string[][]>(() => resizeGrid([], 4, 6));
   const [seedNames, setSeedNames] = useState<string[]>([]);
   const [isCreating, setIsCreating] = useState(false);
@@ -53,12 +55,18 @@ export function NewTrayForm() {
     },
   });
 
-  function updateSize(nextRows: number, nextCols: number) {
-    const clampedRows = Math.min(MAX_SIZE, Math.max(MIN_SIZE, nextRows));
-    const clampedCols = Math.min(MAX_SIZE, Math.max(MIN_SIZE, nextCols));
-    setRows(clampedRows);
-    setCols(clampedCols);
-    setGrid((prev) => resizeGrid(prev, clampedRows, clampedCols));
+  function commitRows() {
+    const clamped = Math.min(MAX_SIZE, Math.max(MIN_SIZE, Number(rowsInput) || rows));
+    setRows(clamped);
+    setRowsInput(String(clamped));
+    setGrid((prev) => resizeGrid(prev, clamped, cols));
+  }
+
+  function commitCols() {
+    const clamped = Math.min(MAX_SIZE, Math.max(MIN_SIZE, Number(colsInput) || cols));
+    setCols(clamped);
+    setColsInput(String(clamped));
+    setGrid((prev) => resizeGrid(prev, rows, clamped));
   }
 
   function setCell(r: number, c: number, value: string) {
@@ -130,8 +138,9 @@ export function NewTrayForm() {
                 type="number"
                 min={MIN_SIZE}
                 max={MAX_SIZE}
-                value={rows}
-                onChange={(e) => updateSize(Number(e.target.value) || MIN_SIZE, cols)}
+                value={rowsInput}
+                onChange={(e) => setRowsInput(e.target.value)}
+                onBlur={commitRows}
               />
             </div>
             <div className="grid gap-2">
@@ -141,8 +150,9 @@ export function NewTrayForm() {
                 type="number"
                 min={MIN_SIZE}
                 max={MAX_SIZE}
-                value={cols}
-                onChange={(e) => updateSize(rows, Number(e.target.value) || MIN_SIZE)}
+                value={colsInput}
+                onChange={(e) => setColsInput(e.target.value)}
+                onBlur={commitCols}
               />
             </div>
           </div>

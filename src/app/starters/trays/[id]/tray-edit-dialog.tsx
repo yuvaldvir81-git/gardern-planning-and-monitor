@@ -42,8 +42,8 @@ export function TrayEditDialog({
   const t = useTranslations("trayEdit");
   const tCommon = useTranslations("common");
   const [open, setOpen] = useState(false);
-  const [rows, setRows] = useState(tray.rows);
-  const [cols, setCols] = useState(tray.cols);
+  const [rowsInput, setRowsInput] = useState(String(tray.rows));
+  const [colsInput, setColsInput] = useState(String(tray.cols));
   const {
     register,
     handleSubmit,
@@ -61,6 +61,8 @@ export function TrayEditDialog({
   });
 
   async function submit(values: TrayFormValues) {
+    const rows = Math.min(MAX_SIZE, Math.max(minRows, Number(rowsInput) || minRows));
+    const cols = Math.min(MAX_SIZE, Math.max(minCols, Number(colsInput) || minCols));
     try {
       await onSubmit(values, { rows, cols });
       toast.success(t("toastUpdated"));
@@ -77,8 +79,8 @@ export function TrayEditDialog({
         setOpen(next);
         if (!next) {
           reset();
-          setRows(tray.rows);
-          setCols(tray.cols);
+          setRowsInput(String(tray.rows));
+          setColsInput(String(tray.cols));
         }
       }}
     >
@@ -123,10 +125,8 @@ export function TrayEditDialog({
                 type="number"
                 min={minRows}
                 max={MAX_SIZE}
-                value={rows}
-                onChange={(e) =>
-                  setRows(Math.min(MAX_SIZE, Math.max(minRows, Number(e.target.value) || minRows)))
-                }
+                value={rowsInput}
+                onChange={(e) => setRowsInput(e.target.value)}
               />
             </div>
             <div className="grid gap-2">
@@ -136,10 +136,8 @@ export function TrayEditDialog({
                 type="number"
                 min={minCols}
                 max={MAX_SIZE}
-                value={cols}
-                onChange={(e) =>
-                  setCols(Math.min(MAX_SIZE, Math.max(minCols, Number(e.target.value) || minCols)))
-                }
+                value={colsInput}
+                onChange={(e) => setColsInput(e.target.value)}
               />
             </div>
           </div>
