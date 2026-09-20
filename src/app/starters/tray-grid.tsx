@@ -3,16 +3,29 @@ import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { starterStatusColors } from "@/lib/validations";
 import { formatGerminationRange, type SeedMetadataSummary } from "@/lib/seed-metadata";
+import { daysSince } from "@/lib/date";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { plantStarters } from "@/db/schema";
 
-type Starter = Pick<typeof plantStarters.$inferSelect, "id" | "rowIndex" | "colIndex" | "name" | "status">;
+type Starter = Pick<
+  typeof plantStarters.$inferSelect,
+  "id" | "rowIndex" | "colIndex" | "name" | "status" | "datePlanted"
+>;
 
-function MetadataTooltipContent({ name, metadata }: { name: string; metadata: SeedMetadataSummary }) {
+function MetadataTooltipContent({
+  name,
+  age,
+  metadata,
+}: {
+  name: string;
+  age: number;
+  metadata: SeedMetadataSummary;
+}) {
   const germination = formatGerminationRange(metadata);
   return (
     <div className="space-y-0.5">
       <p className="font-medium">{name}</p>
+      <p>Planted {age}d ago</p>
       {germination && <p>Germinate: {germination}</p>}
       {metadata.daysToMaturity && <p>Maturity: {metadata.daysToMaturity}d</p>}
       {metadata.sunRequirement && <p>Sun: {metadata.sunRequirement}</p>}
@@ -78,6 +91,7 @@ export function TrayGrid({
           }
 
           const metadata = metadataByName[starter.name];
+          const age = daysSince(starter.datePlanted);
           const cellClassName = cn(
             cellSize,
             "relative flex items-center justify-center overflow-hidden rounded-md px-1 text-center text-xs leading-tight font-medium",
@@ -87,6 +101,9 @@ export function TrayGrid({
           const content = (
             <>
               <span className="line-clamp-2 break-words">{starter.name}</span>
+              <span className="absolute bottom-0.5 left-0.5 text-[9px] leading-none opacity-70">
+                {age}d
+              </span>
               {metadata && (
                 <span className="absolute top-0.5 right-0.5 size-1.5 rounded-full bg-current opacity-60" />
               )}
@@ -120,7 +137,7 @@ export function TrayGrid({
             <Tooltip key={key}>
               <TooltipTrigger render={cellNode} />
               <TooltipContent>
-                <MetadataTooltipContent name={starter.name} metadata={metadata} />
+                <MetadataTooltipContent name={starter.name} age={age} metadata={metadata} />
               </TooltipContent>
             </Tooltip>
           );

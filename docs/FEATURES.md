@@ -67,6 +67,9 @@ Hover doesn't exist on touch devices, so the same summary is also shown as a pla
 tapping any cell opens — that's the reliable path on mobile, the grid tooltip is a
 desktop-only bonus on top of it.
 
+Every filled cell (regardless of whether its seed type has metadata) also shows days
+since planting in the corner — computed from the starter's `date_planted`, not stored.
+
 ## Seed package photos
 
 Adding or editing a starter (via the standalone Add/Edit dialog, or the tray "Add a

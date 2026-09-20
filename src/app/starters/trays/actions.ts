@@ -169,6 +169,7 @@ export async function getTraysForUser() {
       colIndex: plantStarters.colIndex,
       name: plantStarters.name,
       status: plantStarters.status,
+      datePlanted: plantStarters.datePlanted,
     })
     .from(plantStarters)
     .where(eq(plantStarters.userId, userId));
