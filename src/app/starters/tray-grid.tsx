@@ -94,16 +94,14 @@ export function TrayGrid({
           const age = daysSince(starter.datePlanted);
           const cellClassName = cn(
             cellSize,
-            "relative flex items-center justify-center overflow-hidden rounded-md px-1 text-center text-xs leading-tight font-medium",
+            "relative flex flex-col items-center justify-center gap-0.5 overflow-hidden rounded-md px-1 text-center text-xs leading-tight font-medium",
             starterStatusColors[starter.status],
             linkify && "transition-opacity hover:opacity-80"
           );
           const content = (
             <>
-              <span className="line-clamp-2 break-words">{starter.name}</span>
-              <span className="absolute bottom-0.5 left-0.5 text-[9px] leading-none opacity-70">
-                {age}d
-              </span>
+              <span className="line-clamp-1 break-words">{starter.name}</span>
+              <span className="text-[9px] leading-none opacity-70">{age}d</span>
               {metadata && (
                 <span className="absolute top-0.5 right-0.5 size-1.5 rounded-full bg-current opacity-60" />
               )}
