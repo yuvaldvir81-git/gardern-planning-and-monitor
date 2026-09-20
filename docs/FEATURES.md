@@ -29,6 +29,10 @@ individual cells only need a seed name.
   changed — existing starters are renamed, previously-empty positions get a new
   starter, and blanking a cell is a no-op (not a delete) to avoid losing growth history
   by accident.
+- The Edit dialog can also resize the tray (rows/columns, up to 20 each). Shrinking is
+  blocked — not just discouraged — if it would cut off a position that already has a
+  starter: `updateTraySize()` computes the highest occupied row/column and rejects a
+  size below that, so this can't silently orphan a starter's growth log.
 - Deleting a tray cascades to its starters and their growth logs.
 
 ## Import from a spreadsheet

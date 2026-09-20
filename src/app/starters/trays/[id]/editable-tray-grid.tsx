@@ -81,21 +81,23 @@ export function EditableTrayGrid({
 
   return (
     <div className="space-y-3">
-      <div
-        className="grid gap-1.5"
-        style={{ gridTemplateColumns: `repeat(${cols}, minmax(7rem, 1fr))` }}
-      >
-        {grid.map((row, r) =>
-          row.map((cellValue, c) => (
-            <SeedNameCombobox
-              key={`${r}:${c}`}
-              value={cellValue}
-              onChange={(v) => setCell(r, c, v)}
-              suggestions={seedNames}
-              placeholder={`${r + 1},${c + 1}`}
-            />
-          ))
-        )}
+      <div className="overflow-x-auto pb-1">
+        <div
+          className="grid gap-1.5"
+          style={{ gridTemplateColumns: `repeat(${cols}, minmax(7rem, 1fr))` }}
+        >
+          {grid.map((row, r) =>
+            row.map((cellValue, c) => (
+              <SeedNameCombobox
+                key={`${r}:${c}`}
+                value={cellValue}
+                onChange={(v) => setCell(r, c, v)}
+                suggestions={seedNames}
+                placeholder={`${r + 1},${c + 1}`}
+              />
+            ))
+          )}
+        </div>
       </div>
       <div className="flex justify-end gap-2">
         <Button variant="outline" onClick={onDone} disabled={isSaving}>

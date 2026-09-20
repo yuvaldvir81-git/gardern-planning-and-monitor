@@ -2,6 +2,7 @@
 
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { getDb } from "@/db";
 import { plantStarters, starterTrays } from "@/db/schema";
 import { requireUserId } from "../actions";
@@ -214,6 +215,39 @@ export async function updateTray(id: string, values: TrayFormValues) {
       updatedAt: new Date(),
     })
     .where(and(eq(starterTrays.id, id), eq(starterTrays.userId, userId)));
+
+  revalidatePath(`/starters/trays/${id}`);
+  revalidatePath("/starters");
+}
+
+export async function updateTraySize(id: string, rows: number, cols: number) {
+  const userId = await requireUserId();
+  const db = getDb();
+  const t = await getTranslations("trayEdit");
+
+  const [tray] = await db
+    .select()
+    .from(starterTrays)
+    .where(and(eq(starterTrays.id, id), eq(starterTrays.userId, userId)));
+  if (!tray) throw new Error("Tray not found");
+
+  if (rows === tray.rows && cols === tray.cols) return;
+
+  const starters = await db
+    .select({ rowIndex: plantStarters.rowIndex, colIndex: plantStarters.colIndex })
+    .from(plantStarters)
+    .where(eq(plantStarters.trayId, id));
+
+  const maxRow = starters.reduce((m, s) => Math.max(m, s.rowIndex ?? -1), -1);
+  const maxCol = starters.reduce((m, s) => Math.max(m, s.colIndex ?? -1), -1);
+
+  if (rows <= maxRow) throw new Error(t("shrinkRowError", { row: maxRow + 1 }));
+  if (cols <= maxCol) throw new Error(t("shrinkColError", { col: maxCol + 1 }));
+
+  await db
+    .update(starterTrays)
+    .set({ rows, cols, updatedAt: new Date() })
+    .where(eq(starterTrays.id, id));
 
   revalidatePath(`/starters/trays/${id}`);
   revalidatePath("/starters");

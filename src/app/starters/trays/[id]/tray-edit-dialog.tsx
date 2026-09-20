@@ -23,18 +23,27 @@ import type { starterTrays } from "@/db/schema";
 
 type Tray = typeof starterTrays.$inferSelect;
 
+const MAX_SIZE = 20;
+
 export function TrayEditDialog({
   tray,
+  minRows,
+  minCols,
   trigger,
   onSubmit,
 }: {
   tray: Tray;
+  /** Smallest size that wouldn't cut off a starter already placed in the tray. */
+  minRows: number;
+  minCols: number;
   trigger: React.ReactElement;
-  onSubmit: (values: TrayFormValues) => Promise<void>;
+  onSubmit: (values: TrayFormValues, size: { rows: number; cols: number }) => Promise<void>;
 }) {
   const t = useTranslations("trayEdit");
   const tCommon = useTranslations("common");
   const [open, setOpen] = useState(false);
+  const [rows, setRows] = useState(tray.rows);
+  const [cols, setCols] = useState(tray.cols);
   const {
     register,
     handleSubmit,
@@ -53,11 +62,11 @@ export function TrayEditDialog({
 
   async function submit(values: TrayFormValues) {
     try {
-      await onSubmit(values);
+      await onSubmit(values, { rows, cols });
       toast.success(t("toastUpdated"));
       setOpen(false);
-    } catch {
-      toast.error(tCommon("genericError"));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : tCommon("genericError"));
     }
   }
 
@@ -66,7 +75,11 @@ export function TrayEditDialog({
       open={open}
       onOpenChange={(next) => {
         setOpen(next);
-        if (!next) reset();
+        if (!next) {
+          reset();
+          setRows(tray.rows);
+          setCols(tray.cols);
+        }
       }}
     >
       <DialogTrigger render={trigger} />
@@ -102,6 +115,35 @@ export function TrayEditDialog({
             <Label htmlFor="tray-notes">{t("notes")}</Label>
             <Textarea id="tray-notes" rows={3} {...register("notes")} />
           </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="tray-rows">{t("rows")}</Label>
+              <Input
+                id="tray-rows"
+                type="number"
+                min={minRows}
+                max={MAX_SIZE}
+                value={rows}
+                onChange={(e) =>
+                  setRows(Math.min(MAX_SIZE, Math.max(minRows, Number(e.target.value) || minRows)))
+                }
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="tray-cols">{t("columns")}</Label>
+              <Input
+                id="tray-cols"
+                type="number"
+                min={minCols}
+                max={MAX_SIZE}
+                value={cols}
+                onChange={(e) =>
+                  setCols(Math.min(MAX_SIZE, Math.max(minCols, Number(e.target.value) || minCols)))
+                }
+              />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">{t("sizeHint")}</p>
           <DialogFooter>
             <Button type="submit" disabled={isSubmitting}>
               {tCommon("saveChanges")}

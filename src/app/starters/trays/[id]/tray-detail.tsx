@@ -19,7 +19,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { TrayGrid } from "../../tray-grid";
-import { deleteTray, updateTray } from "../actions";
+import { deleteTray, updateTray, updateTraySize } from "../actions";
 import { TrayEditDialog } from "./tray-edit-dialog";
 import { EditableTrayGrid } from "./editable-tray-grid";
 import { AddCellDialog } from "./add-cell-dialog";
@@ -59,6 +59,8 @@ export function TrayDetail({
   }
 
   const filledCount = starters.length;
+  const minRows = starters.reduce((m, s) => Math.max(m, (s.rowIndex ?? -1) + 1), 1);
+  const minCols = starters.reduce((m, s) => Math.max(m, (s.colIndex ?? -1) + 1), 1);
 
   return (
     <div className="space-y-6">
@@ -73,8 +75,13 @@ export function TrayDetail({
           <div className="flex items-center gap-1">
             <TrayEditDialog
               tray={tray}
-              onSubmit={async (values) => {
+              minRows={minRows}
+              minCols={minCols}
+              onSubmit={async (values, size) => {
                 await updateTray(tray.id, values);
+                if (size.rows !== tray.rows || size.cols !== tray.cols) {
+                  await updateTraySize(tray.id, size.rows, size.cols);
+                }
                 router.refresh();
               }}
               trigger={

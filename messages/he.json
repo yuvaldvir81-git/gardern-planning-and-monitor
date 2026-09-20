@@ -134,7 +134,12 @@
     "location": "מיקום",
     "seedSource": "מקור הזרע",
     "notes": "הערות",
-    "toastUpdated": "המגש עודכן"
+    "rows": "שורות",
+    "columns": "עמודות",
+    "sizeHint": "לא ניתן לצמצם את המגש אם זה יחתוך תא שכבר יש בו שתיל.",
+    "toastUpdated": "המגש עודכן",
+    "shrinkRowError": "לא ניתן לצמצם מתחת לשורה {row} — יש בה שתיל",
+    "shrinkColError": "לא ניתן לצמצם מתחת לעמודה {col} — יש בה שתיל"
   },
   "editableTrayGrid": {
     "updated": "{count} עודכנו",

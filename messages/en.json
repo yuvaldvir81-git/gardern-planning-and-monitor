@@ -134,7 +134,12 @@
     "location": "Location",
     "seedSource": "Seed source",
     "notes": "Notes",
-    "toastUpdated": "Tray updated"
+    "rows": "Rows",
+    "columns": "Columns",
+    "sizeHint": "Shrinking is blocked if it would cut off a cell that already has a starter.",
+    "toastUpdated": "Tray updated",
+    "shrinkRowError": "Can't shrink below row {row} — it has a starter",
+    "shrinkColError": "Can't shrink below column {col} — it has a starter"
   },
   "editableTrayGrid": {
     "updated": "updated {count}",
