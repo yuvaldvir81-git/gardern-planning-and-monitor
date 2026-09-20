@@ -9,6 +9,7 @@ import {
   date,
   uuid,
   unique,
+  jsonb,
 } from "drizzle-orm/pg-core";
 
 export const starterStatus = pgEnum("starter_status", [
@@ -111,5 +112,52 @@ export const growthEntriesRelations = relations(growthEntries, ({ one }) => ({
   starter: one(plantStarters, {
     fields: [growthEntries.starterId],
     references: [plantStarters.id],
+  }),
+}));
+
+export const gardens = pgTable("gardens", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  name: text("name").notNull(),
+  addressLabel: text("address_label"),
+  lat: numeric("lat", { precision: 9, scale: 6 }).notNull(),
+  lng: numeric("lng", { precision: 9, scale: 6 }).notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const gardenShapeType = pgEnum("garden_shape_type", [
+  "boundary",
+  "house",
+  "tree",
+  "vegetable_plot",
+  "green_patch",
+]);
+
+export const gardenShapes = pgTable("garden_shapes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  gardenId: uuid("garden_id")
+    .notNull()
+    .references(() => gardens.id, { onDelete: "cascade" }),
+  type: gardenShapeType("type").notNull(),
+  label: text("label"),
+  /** Array of {lat, lng} vertices. A single-point array for trees (center point). */
+  points: jsonb("points").notNull().$type<{ lat: number; lng: number }[]>(),
+  /** Obstacle height in meters — set for house/tree, null for boundary/plot/patch. */
+  heightM: numeric("height_m", { precision: 5, scale: 2 }),
+  /** Canopy radius in meters — set for tree only. */
+  radiusM: numeric("radius_m", { precision: 6, scale: 2 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const gardensRelations = relations(gardens, ({ many }) => ({
+  shapes: many(gardenShapes),
+}));
+
+export const gardenShapesRelations = relations(gardenShapes, ({ one }) => ({
+  garden: one(gardens, {
+    fields: [gardenShapes.gardenId],
+    references: [gardens.id],
   }),
 }));

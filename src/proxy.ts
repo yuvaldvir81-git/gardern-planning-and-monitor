@@ -5,7 +5,7 @@ import { getDb } from "@/db";
 import { userSettings } from "@/db/schema";
 import { localeCookieName } from "@/i18n/request";
 
-const isProtectedRoute = createRouteMatcher(["/starters(.*)"]);
+const isProtectedRoute = createRouteMatcher(["/starters(.*)", "/settings(.*)", "/garden(.*)"]);
 
 export default clerkMiddleware(async (auth, req) => {
   if (isProtectedRoute(req)) {

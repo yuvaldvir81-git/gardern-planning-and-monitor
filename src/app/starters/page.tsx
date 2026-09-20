@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Settings, Sprout } from "lucide-react";
+import { MapPinned, Settings, Sprout } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { UserButton } from "@clerk/nextjs";
 import { getStartersForUser } from "./actions";
@@ -9,11 +9,12 @@ import { StartersTable } from "./starters-table";
 import { TraysSection } from "./trays-section";
 
 export default async function StartersPage() {
-  const [starters, trays, metadataByName, t] = await Promise.all([
+  const [starters, trays, metadataByName, t, tGarden] = await Promise.all([
     getStartersForUser(),
     getTraysForUser(),
     getSeedTypeMetadataMap(),
     getTranslations("nav"),
+    getTranslations("garden"),
   ]);
 
   return (
@@ -21,6 +22,13 @@ export default async function StartersPage() {
       <div className="mb-6 flex items-center justify-between">
         <span className="text-sm font-medium text-muted-foreground">{t("appName")}</span>
         <div className="flex items-center gap-4">
+          <Link
+            href="/garden"
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+          >
+            <MapPinned className="h-4 w-4" />
+            {tGarden("navLink")}
+          </Link>
           <Link
             href="/starters/seeds"
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"

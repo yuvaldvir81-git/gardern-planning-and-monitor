@@ -63,6 +63,25 @@ written together whenever the user changes their language on `/settings`, and
 browser/device that doesn't have it yet — so a fresh browser picks up the account's
 saved language automatically instead of defaulting to English.
 
+## `gardens` / `garden_shapes`
+
+Support for multiple gardens per user (see
+[FEATURES.md](./FEATURES.md#garden-planning-map--sun-exposure)). `gardens` holds the
+geocoded center point (`lat`/`lng`, `numeric(9,6)`) and address label; `garden_shapes`
+holds every drawn shape, `on delete cascade` on `garden_id`.
+
+| column | notes |
+|---|---|
+| `garden_shapes.type` | `garden_shape_type` enum: `boundary` \| `house` \| `tree` \| `vegetable_plot` \| `green_patch` |
+| `garden_shapes.points` | `jsonb`, `{lat, lng}[]` — polygon vertices (trees store a single center point instead) |
+| `garden_shapes.height_m` | nullable, `numeric(5,2)` — only meaningful for `house`/`tree`; feeds the shadow simulation |
+| `garden_shapes.radius_m` | nullable, `numeric(6,2)` — tree canopy radius, defaults to 1.5m if unset |
+
+Sun exposure results aren't persisted — they're computed on demand from the current
+shapes (`computeGardenSunExposure()` in
+[`src/app/garden/actions.ts`](../src/app/garden/actions.ts)) since they're cheap to
+recompute and would otherwise go stale every time a shape moves.
+
 ## Why not the `xlsx` package
 
 Import parses `.xlsx` with `exceljs` and `.csv` with `papaparse` instead of the more

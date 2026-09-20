@@ -145,6 +145,35 @@ edge cases) are still English-only — translating those requires turning each Z
 schema into a locale-aware factory, which was scoped out of this pass as a
 meaningfully separate refactor from translating UI chrome.
 
+## Garden planning (map + sun exposure)
+
+`/garden` lists every garden the signed-in user has created (multiple gardens per
+account are supported); `/garden/new` geocodes a free-text address via Nominatim
+(OpenStreetMap, proxied server-side with a custom `User-Agent` per their usage policy)
+and creates a garden centered there. `/garden/[id]` is the map editor:
+
+- Satellite imagery (Esri World Imagery, no API key) via Leaflet/react-leaflet, with
+  drawing/editing handled by `@geoman-io/leaflet-geoman-free`.
+- Five shape types can be drawn: garden **boundary**, **house**, **tree**, **vegetable
+  plot**, **green patch**. Each polygon (trees are a point + radius, rendered as a real
+  circle in meters, not a fixed pixel size) is saved with an optional label and, for
+  house/tree, a height in meters — height is what feeds the shadow simulation below.
+- **Sun exposure**: a "Compute sun exposure" action samples points across the boundary
+  polygon and, for each one, runs a real shadow simulation (not a fixed-percentage
+  heuristic) across a full year — see
+  [`src/lib/sun-exposure.ts`](../src/lib/sun-exposure.ts). For each sample point, for
+  each month (sampled on the 15th) and each 30-minute interval during daylight, it uses
+  `suncalc` to get the sun's altitude/azimuth at that location/time, and checks whether
+  any obstacle (house, tree canopy) casts a shadow over that point: shadow length is
+  `height / tan(altitude)` (skipped below a 2° altitude floor — near-horizon numbers
+  blow up and aren't meaningful), shadow direction is `azimuth + 180°`, and the shadowed
+  region is the convex hull of the obstacle's footprint and that footprint translated by
+  the shadow vector — not just the translated copy alone, which would only mark the
+  shadow's far tip and miss the area between the object and its shadow. The result is an
+  average sun-hours-per-day figure per sample point, rendered as a colored dot overlay
+  (green = full sun, through yellow, to blue = shade).
+- Deleting a garden cascades to its shapes.
+
 ## Auth & hosting
 
 - Clerk handles sign-up/sign-in; `/starters/*` routes are protected in `src/proxy.ts`.
