@@ -19,6 +19,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { starterStatusLabels } from "@/lib/validations";
+import { formatGerminationRange, type SeedMetadataSummary } from "@/lib/seed-metadata";
 import type { growthEntries, plantStarters } from "@/db/schema";
 import { addGrowthEntry, deleteGrowthEntry, updateStarter } from "../actions";
 import { StarterFormDialog } from "../starter-form-dialog";
@@ -30,9 +31,11 @@ type GrowthEntry = typeof growthEntries.$inferSelect;
 export function StarterDetail({
   starter,
   entries,
+  seedMetadata,
 }: {
   starter: Starter;
   entries: GrowthEntry[];
+  seedMetadata?: SeedMetadataSummary;
 }) {
   const router = useRouter();
 
@@ -74,6 +77,16 @@ export function StarterDetail({
           </div>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
+          {starter.photoUrl && (
+            <div className="col-span-full">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={starter.photoUrl}
+                alt={`${starter.name} seed package`}
+                className="h-32 w-32 rounded-md border object-cover"
+              />
+            </div>
+          )}
           <div>
             <p className="text-muted-foreground">Date planted</p>
             <p>{starter.datePlanted}</p>
@@ -94,6 +107,32 @@ export function StarterDetail({
           )}
         </CardContent>
       </Card>
+
+      {seedMetadata && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Seed info</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+            <div>
+              <p className="text-muted-foreground">Germinate</p>
+              <p>{formatGerminationRange(seedMetadata) ?? "—"}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Maturity</p>
+              <p>{seedMetadata.daysToMaturity ? `${seedMetadata.daysToMaturity}d` : "—"}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Sun</p>
+              <p>{seedMetadata.sunRequirement || "—"}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Spacing</p>
+              <p>{seedMetadata.spacingCm ? `${seedMetadata.spacingCm} cm` : "—"}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">

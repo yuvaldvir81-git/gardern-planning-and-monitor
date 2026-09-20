@@ -218,7 +218,12 @@ export async function updateTray(id: string, values: TrayFormValues) {
   revalidatePath("/starters");
 }
 
-export type TrayCellChange = { rowIndex: number; colIndex: number; name: string };
+export type TrayCellChange = {
+  rowIndex: number;
+  colIndex: number;
+  name: string;
+  photoUrl?: string | null;
+};
 
 export async function updateTrayCells(trayId: string, changes: TrayCellChange[]) {
   const userId = await requireUserId();
@@ -242,10 +247,14 @@ export async function updateTrayCells(trayId: string, changes: TrayCellChange[])
     const key = `${change.rowIndex}:${change.colIndex}`;
     const existingStarter = existingByPosition.get(key);
     if (existingStarter) {
-      if (existingStarter.name !== name) {
+      if (existingStarter.name !== name || change.photoUrl !== undefined) {
         await db
           .update(plantStarters)
-          .set({ name, updatedAt: new Date() })
+          .set({
+            name,
+            ...(change.photoUrl !== undefined ? { photoUrl: change.photoUrl || null } : {}),
+            updatedAt: new Date(),
+          })
           .where(eq(plantStarters.id, existingStarter.id));
         updated++;
       }
@@ -262,6 +271,7 @@ export async function updateTrayCells(trayId: string, changes: TrayCellChange[])
         rowIndex: c.rowIndex,
         colIndex: c.colIndex,
         name: c.name,
+        photoUrl: c.photoUrl || null,
         datePlanted: tray.datePlanted,
         location: tray.location,
         seedSource: tray.seedSource,

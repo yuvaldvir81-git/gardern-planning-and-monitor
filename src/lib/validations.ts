@@ -29,6 +29,7 @@ export const starterFormSchema = z.object({
   location: z.string().trim().max(160).optional().or(z.literal("")),
   status: z.enum(starterStatusValues),
   notes: z.string().trim().max(2000).optional().or(z.literal("")),
+  photoUrl: z.string().trim().optional().or(z.literal("")),
 });
 
 export type StarterFormValues = z.infer<typeof starterFormSchema>;

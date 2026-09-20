@@ -25,6 +25,7 @@ deleting a tray deletes its starters (and their growth logs, transitively).
 |---|---|
 | `status` | `starter_status` enum: `seed` → `germinating` → `seedling` → `transplanted` → `growing` → `harvested` / `dead` |
 | `date_planted` | not null even for tray cells — copied from the tray at creation time (denormalized, not a live reference) |
+| `photo_url` | nullable, a Vercel Blob URL — optional seed *package* photo, distinct from growth-log photos (see [FEATURES.md](./FEATURES.md#seed-package-photos)) |
 
 ## `growth_entries`
 

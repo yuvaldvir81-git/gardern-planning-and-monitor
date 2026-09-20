@@ -59,6 +59,32 @@ names only). The name field everywhere a starter is created or renamed is a free
 combobox that suggests matches from that bank as you type, without restricting input to
 existing names.
 
+Once a seed type has generated metadata, filled tray cells whose name matches it show
+a small dot and a hover tooltip with the summary (germination range, maturity, sun,
+spacing) — on both the tray detail grid and the mini tray previews on `/starters`.
+Hover doesn't exist on touch devices, so the same summary is also shown as a plain
+"Seed info" card on the starter's own detail page (`/starters/[id]`), which is what
+tapping any cell opens — that's the reliable path on mobile, the grid tooltip is a
+desktop-only bonus on top of it.
+
+## Seed package photos
+
+Adding or editing a starter (via the standalone Add/Edit dialog, or the tray "Add a
+seed" quick-add) has an optional photo — meant for a picture of the seed packet, not a
+growth-progress shot (that's what [growth log](#plant-starters) photos are for,
+though photo *capture* isn't wired up there yet, only a URL field). On mobile, the
+file input's `capture="environment"` attribute opens the camera directly instead of a
+file picker.
+
+Uploads go straight from the browser to Vercel Blob via `@vercel/blob/client`'s
+`upload()`, not through a Server Action — Server Actions cap request bodies well below
+what a phone camera photo needs. `src/app/api/upload/route.ts` implements
+`handleUpload` to mint a short-lived client token per request (auth-gated via Clerk,
+restricted to image content types, 10 MB max) rather than handling the file bytes
+itself. The Blob store was provisioned with `vercel storage create ... --access public`
+and connected with OIDC credentials (no `BLOB_READ_WRITE_TOKEN` needed, same OIDC
+pattern as the AI Gateway).
+
 ## Seed metadata agent
 
 `/starters/seeds` lists the seed bank with its metadata columns (germination days

@@ -34,6 +34,7 @@ export async function createStarter(values: StarterFormValues) {
     location: data.location || null,
     status: data.status,
     notes: data.notes || null,
+    photoUrl: data.photoUrl || null,
   });
   await ensureSeedTypes(userId, [data.name]);
 
@@ -56,6 +57,7 @@ export async function updateStarter(id: string, values: StarterFormValues) {
       location: data.location || null,
       status: data.status,
       notes: data.notes || null,
+      photoUrl: data.photoUrl || null,
       updatedAt: new Date(),
     })
     .where(and(eq(plantStarters.id, id), eq(plantStarters.userId, userId)));

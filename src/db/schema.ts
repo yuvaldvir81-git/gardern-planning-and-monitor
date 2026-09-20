@@ -49,6 +49,7 @@ export const plantStarters = pgTable("plant_starters", {
   location: text("location"),
   status: starterStatus("status").notNull().default("seed"),
   notes: text("notes"),
+  photoUrl: text("photo_url"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

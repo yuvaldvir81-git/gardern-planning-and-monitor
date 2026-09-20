@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getStarterWithEntries } from "../actions";
+import { getSeedTypeMetadataMap } from "../seed-types/actions";
 import { StarterDetail } from "./starter-detail";
 
 export default async function StarterDetailPage({
@@ -10,7 +11,10 @@ export default async function StarterDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const result = await getStarterWithEntries(id);
+  const [result, metadataByName] = await Promise.all([
+    getStarterWithEntries(id),
+    getSeedTypeMetadataMap(),
+  ]);
   if (!result) notFound();
 
   return (
@@ -22,7 +26,11 @@ export default async function StarterDetailPage({
         <ArrowLeft className="h-4 w-4" />
         {result.starter.trayId ? "Back to tray" : "Back to starters"}
       </Link>
-      <StarterDetail starter={result.starter} entries={result.entries} />
+      <StarterDetail
+        starter={result.starter}
+        entries={result.entries}
+        seedMetadata={metadataByName[result.starter.name]}
+      />
     </div>
   );
 }

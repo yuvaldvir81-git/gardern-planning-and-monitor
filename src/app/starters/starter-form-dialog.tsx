@@ -31,6 +31,7 @@ import {
   type StarterFormValues,
 } from "@/lib/validations";
 import { SeedNameCombobox } from "./seed-name-combobox";
+import { PhotoCaptureInput } from "./photo-capture-input";
 import { getSeedTypeNames } from "./seed-types/actions";
 import type { plantStarters } from "@/db/schema";
 
@@ -70,6 +71,7 @@ export function StarterFormDialog({
           location: starter.location ?? "",
           status: starter.status,
           notes: starter.notes ?? "",
+          photoUrl: starter.photoUrl ?? "",
         }
       : {
           name: "",
@@ -80,6 +82,7 @@ export function StarterFormDialog({
           location: "",
           status: "seed",
           notes: "",
+          photoUrl: "",
         },
   });
 
@@ -187,6 +190,20 @@ export function StarterFormDialog({
           <div className="grid gap-2">
             <Label htmlFor="notes">Notes</Label>
             <Textarea id="notes" rows={3} {...register("notes")} />
+          </div>
+
+          <div className="grid gap-2">
+            <Label>Seed package photo</Label>
+            <Controller
+              control={control}
+              name="photoUrl"
+              render={({ field }) => (
+                <PhotoCaptureInput
+                  value={field.value || null}
+                  onChange={(url) => field.onChange(url ?? "")}
+                />
+              )}
+            />
           </div>
 
           <DialogFooter>

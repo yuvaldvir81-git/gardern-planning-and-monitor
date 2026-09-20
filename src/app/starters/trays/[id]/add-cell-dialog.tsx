@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { SeedNameCombobox } from "../../seed-name-combobox";
+import { PhotoCaptureInput } from "../../photo-capture-input";
 import { updateTrayCells } from "../actions";
 
 export function AddCellDialog({
@@ -30,6 +31,7 @@ export function AddCellDialog({
   onAdded: () => void;
 }) {
   const [name, setName] = useState("");
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   async function handleAdd() {
@@ -37,10 +39,11 @@ export function AddCellDialog({
     setIsSaving(true);
     try {
       await updateTrayCells(trayId, [
-        { rowIndex: position.rowIndex, colIndex: position.colIndex, name },
+        { rowIndex: position.rowIndex, colIndex: position.colIndex, name, photoUrl },
       ]);
       toast.success("Starter added");
       setName("");
+      setPhotoUrl(null);
       onAdded();
     } catch {
       toast.error("Couldn't add starter");
@@ -53,7 +56,10 @@ export function AddCellDialog({
     <Dialog
       open={position !== null}
       onOpenChange={(next) => {
-        if (!next) setName("");
+        if (!next) {
+          setName("");
+          setPhotoUrl(null);
+        }
         onOpenChange(next);
       }}
     >
@@ -73,6 +79,10 @@ export function AddCellDialog({
             suggestions={seedNames}
             placeholder="Cherokee Purple"
           />
+        </div>
+        <div className="grid gap-2">
+          <Label>Seed package photo</Label>
+          <PhotoCaptureInput value={photoUrl} onChange={setPhotoUrl} />
         </div>
         <DialogFooter>
           <Button onClick={handleAdd} disabled={isSaving || !name.trim()}>
