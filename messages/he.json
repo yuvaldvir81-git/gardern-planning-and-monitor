@@ -145,7 +145,13 @@
     "updated": "{count} עודכנו",
     "added": "{count} נוספו",
     "noChanges": "אין שינויים",
-    "saveError": "לא ניתן היה לשמור את השינויים"
+    "saveError": "לא ניתן היה לשמור את השינויים",
+    "fillRowAriaLabel": "מילוי כל השורה {row}",
+    "fillColumnAriaLabel": "מילוי כל העמודה {col}",
+    "fillRowPlaceholder": "מילוי שורה {row}",
+    "fillColumnPlaceholder": "מילוי עמודה {col}",
+    "fillRowDateAriaLabel": "קביעת תאריך שתילה לכל השורה {row}",
+    "fillColumnDateAriaLabel": "קביעת תאריך שתילה לכל העמודה {col}"
   },
   "addCell": {
     "title": "הוספת זרע",
@@ -326,7 +332,11 @@
     "drawTree": "הוספת עץ",
     "drawPlot": "ציור ערוגה",
     "drawPatch": "ציור שטח ירוק",
+    "layerSatellite": "לוויין",
+    "layerStreet": "רחובות",
     "newShapeTitle": "{type} חדש",
+    "editShapeTitle": "עריכת {type}",
+    "editShapeAriaLabel": "עריכת צורה",
     "label": "תווית",
     "labelPlaceholder": "שם אופציונלי",
     "heightM": "גובה (מטרים)",
@@ -342,7 +352,14 @@
     "hideSun": "הסתרת חשיפה לשמש",
     "sunHoursLegend": "ממוצע שעות שמש ליום (שנתי)",
     "toastShapeAdded": "הצורה נוספה",
-    "toastShapeDeleted": "הצורה הוסרה"
+    "toastShapeUpdated": "הצורה עודכנה",
+    "toastShapeDeleted": "הצורה הוסרה",
+    "editAddressAriaLabel": "עריכת כתובת",
+    "editAddressTitle": "עריכת כתובת",
+    "toastAddressUpdated": "הכתובת עודכנה",
+    "toastAddressUpdateError": "לא ניתן לעדכן את הכתובת",
+    "positionMovedHint": "גררו את הסיכה ואז שמרו כדי לעדכן את המיקום המדויק של הגינה.",
+    "savePosition": "שמירת מיקום"
   },
   "settings": {
     "backToStarters": "חזרה לשתילים",

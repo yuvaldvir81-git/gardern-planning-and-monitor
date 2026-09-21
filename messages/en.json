@@ -145,7 +145,13 @@
     "updated": "updated {count}",
     "added": "added {count}",
     "noChanges": "No changes",
-    "saveError": "Couldn't save changes"
+    "saveError": "Couldn't save changes",
+    "fillRowAriaLabel": "Fill entire row {row}",
+    "fillColumnAriaLabel": "Fill entire column {col}",
+    "fillRowPlaceholder": "Fill row {row}",
+    "fillColumnPlaceholder": "Fill col {col}",
+    "fillRowDateAriaLabel": "Set planting date for entire row {row}",
+    "fillColumnDateAriaLabel": "Set planting date for entire column {col}"
   },
   "addCell": {
     "title": "Add a seed",
@@ -326,7 +332,11 @@
     "drawTree": "Place tree",
     "drawPlot": "Draw plot",
     "drawPatch": "Draw patch",
+    "layerSatellite": "Satellite",
+    "layerStreet": "Street",
     "newShapeTitle": "New {type}",
+    "editShapeTitle": "Edit {type}",
+    "editShapeAriaLabel": "Edit shape",
     "label": "Label",
     "labelPlaceholder": "Optional name",
     "heightM": "Height (meters)",
@@ -342,7 +352,14 @@
     "hideSun": "Hide sun exposure",
     "sunHoursLegend": "Avg. sun hours/day (yearly)",
     "toastShapeAdded": "Shape added",
-    "toastShapeDeleted": "Shape removed"
+    "toastShapeUpdated": "Shape updated",
+    "toastShapeDeleted": "Shape removed",
+    "editAddressAriaLabel": "Edit address",
+    "editAddressTitle": "Edit address",
+    "toastAddressUpdated": "Address updated",
+    "toastAddressUpdateError": "Couldn't update the address",
+    "positionMovedHint": "Drag the pin, then save to update the exact garden location.",
+    "savePosition": "Save location"
   },
   "settings": {
     "backToStarters": "Back to starters",

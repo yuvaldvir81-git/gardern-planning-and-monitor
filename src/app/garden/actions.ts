@@ -83,6 +83,35 @@ export async function renameGarden(id: string, name: string) {
   revalidatePath("/garden");
 }
 
+export async function updateGardenLocation(
+  id: string,
+  values: { addressLabel: string; lat: number; lng: number }
+) {
+  const userId = await requireUserId();
+  const db = getDb();
+  await db
+    .update(gardens)
+    .set({
+      addressLabel: values.addressLabel || null,
+      lat: String(values.lat),
+      lng: String(values.lng),
+      updatedAt: new Date(),
+    })
+    .where(and(eq(gardens.id, id), eq(gardens.userId, userId)));
+  revalidatePath(`/garden/${id}`);
+  revalidatePath("/garden");
+}
+
+export async function updateGardenCoordinates(id: string, lat: number, lng: number) {
+  const userId = await requireUserId();
+  const db = getDb();
+  await db
+    .update(gardens)
+    .set({ lat: String(lat), lng: String(lng), updatedAt: new Date() })
+    .where(and(eq(gardens.id, id), eq(gardens.userId, userId)));
+  revalidatePath(`/garden/${id}`);
+}
+
 export async function deleteGarden(id: string) {
   const userId = await requireUserId();
   const db = getDb();
@@ -123,11 +152,23 @@ export async function createShape(
   revalidatePath(`/garden/${gardenId}`);
 }
 
+async function requireOwnedShape(id: string, userId: string) {
+  const db = getDb();
+  const [row] = await db
+    .select({ id: gardenShapes.id, gardenId: gardenShapes.gardenId })
+    .from(gardenShapes)
+    .innerJoin(gardens, eq(gardenShapes.gardenId, gardens.id))
+    .where(and(eq(gardenShapes.id, id), eq(gardens.userId, userId)));
+  if (!row) throw new Error("Shape not found");
+  return row;
+}
+
 export async function updateShape(
   id: string,
   values: { label?: string; heightM?: number | null; radiusM?: number | null }
 ) {
-  await requireUserId();
+  const userId = await requireUserId();
+  const { gardenId } = await requireOwnedShape(id, userId);
   const db = getDb();
 
   await db
@@ -143,10 +184,12 @@ export async function updateShape(
       updatedAt: new Date(),
     })
     .where(eq(gardenShapes.id, id));
+  revalidatePath(`/garden/${gardenId}`);
 }
 
 export async function deleteShape(id: string, gardenId: string) {
-  await requireUserId();
+  const userId = await requireUserId();
+  await requireOwnedShape(id, userId);
   const db = getDb();
   await db.delete(gardenShapes).where(eq(gardenShapes.id, id));
   revalidatePath(`/garden/${gardenId}`);

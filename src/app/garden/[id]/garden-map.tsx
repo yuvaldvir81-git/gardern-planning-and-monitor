@@ -11,6 +11,8 @@ import "@geoman-io/leaflet-geoman-free";
 import {
   MapContainer,
   TileLayer,
+  LayersControl,
+  Marker,
   Polygon,
   Circle,
   CircleMarker,
@@ -24,6 +26,7 @@ import {
   Trash2,
   Square,
   Loader2,
+  Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,8 +42,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   createShape,
+  updateShape,
   deleteShape,
   computeGardenSunExposure,
+  updateGardenCoordinates,
   type ShapeType,
   type SunGridResult,
 } from "../actions";
@@ -152,22 +157,29 @@ export function GardenMap({
   const [isSaving, setIsSaving] = useState(false);
   const [sunGrid, setSunGrid] = useState<SunGridResult | null>(null);
   const [isComputingSun, setIsComputingSun] = useState(false);
-  const [globalError, setGlobalError] = useState<string | null>(null);
+  const [editingShape, setEditingShape] = useState<Shape | null>(null);
+  const [editLabelInput, setEditLabelInput] = useState("");
+  const [editHeightInput, setEditHeightInput] = useState("");
+  const [editRadiusInput, setEditRadiusInput] = useState("");
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const savedPosition: [number, number] = [Number(garden.lat), Number(garden.lng)];
+  const [markerPosition, setMarkerPosition] = useState<[number, number]>(savedPosition);
+  const [isSavingPosition, setIsSavingPosition] = useState(false);
+  const positionMoved =
+    markerPosition[0] !== savedPosition[0] || markerPosition[1] !== savedPosition[1];
 
-  useEffect(() => {
-    function handleError(e: ErrorEvent) {
-      setGlobalError(e.message || String(e.error));
+  async function handleSavePosition() {
+    setIsSavingPosition(true);
+    try {
+      await updateGardenCoordinates(garden.id, markerPosition[0], markerPosition[1]);
+      toast.success(t("toastAddressUpdated"));
+      router.refresh();
+    } catch {
+      toast.error(t("toastAddressUpdateError"));
+    } finally {
+      setIsSavingPosition(false);
     }
-    function handleRejection(e: PromiseRejectionEvent) {
-      setGlobalError(String(e.reason?.message ?? e.reason));
-    }
-    window.addEventListener("error", handleError);
-    window.addEventListener("unhandledrejection", handleRejection);
-    return () => {
-      window.removeEventListener("error", handleError);
-      window.removeEventListener("unhandledrejection", handleRejection);
-    };
-  }, []);
+  }
 
   function startDraw(type: ShapeType) {
     const map = mapRef.current;
@@ -224,6 +236,38 @@ export function GardenMap({
     }
   }
 
+  function handleEditShape(shape: Shape) {
+    setEditingShape(shape);
+    setEditLabelInput(shape.label ?? "");
+    setEditHeightInput(shape.heightM ?? "");
+    setEditRadiusInput(shape.radiusM ?? String(DEFAULT_TREE_RADIUS_M));
+  }
+
+  async function confirmEditShape() {
+    if (!editingShape) return;
+    setIsSavingEdit(true);
+    try {
+      await updateShape(editingShape.id, {
+        label: editLabelInput,
+        heightM:
+          editingShape.type === "house" || editingShape.type === "tree"
+            ? Number(editHeightInput) || null
+            : undefined,
+        radiusM:
+          editingShape.type === "tree"
+            ? Number(editRadiusInput) || DEFAULT_TREE_RADIUS_M
+            : undefined,
+      });
+      toast.success(t("toastShapeUpdated"));
+      setEditingShape(null);
+      router.refresh();
+    } catch {
+      toast.error(t("sunComputeError"));
+    } finally {
+      setIsSavingEdit(false);
+    }
+  }
+
   async function handleComputeSun() {
     setIsComputingSun(true);
     try {
@@ -246,31 +290,46 @@ export function GardenMap({
 
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_20rem]">
-      {globalError && (
-        <div className="rounded-md border-2 border-red-500 bg-red-950 p-3 text-sm text-red-200 lg:col-span-2">
-          Global error caught: {globalError}
-        </div>
-      )}
       <MapErrorBoundary>
-        <div className="h-[60vh] overflow-hidden rounded-lg border-4 border-yellow-400 lg:h-[75vh]">
-          <div className="bg-yellow-400 px-2 py-0.5 text-xs font-bold text-black">
-            MAP CONTAINER SENTINEL
-          </div>
+        <div className="relative isolate h-[60vh] overflow-hidden rounded-lg border lg:h-[75vh]">
           <MapContainer
             center={[Number(garden.lat), Number(garden.lng)]}
             zoom={20}
             maxZoom={22}
             className="h-full w-full"
           >
-            <TileLayer
-              attribution="Tiles &copy; Esri"
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-              maxZoom={22}
-              maxNativeZoom={19}
-            />
+            <LayersControl position="topright">
+              <LayersControl.BaseLayer checked name={t("layerSatellite")}>
+                <TileLayer
+                  attribution="Tiles &copy; Esri"
+                  url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                  maxZoom={22}
+                  maxNativeZoom={18}
+                />
+              </LayersControl.BaseLayer>
+              <LayersControl.BaseLayer name={t("layerStreet")}>
+                <TileLayer
+                  attribution="&copy; OpenStreetMap contributors"
+                  url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  maxZoom={22}
+                  maxNativeZoom={18}
+                />
+              </LayersControl.BaseLayer>
+            </LayersControl>
             <MapEvents
               onReady={(map) => (mapRef.current = map)}
               onCreate={handleCreate}
+            />
+
+            <Marker
+              position={markerPosition}
+              draggable
+              eventHandlers={{
+                dragend: (e) => {
+                  const { lat, lng } = (e.target as L.Marker).getLatLng();
+                  setMarkerPosition([lat, lng]);
+                },
+              }}
             />
 
             {shapes.map((shape) => {
@@ -321,6 +380,37 @@ export function GardenMap({
       </MapErrorBoundary>
 
       <div className="space-y-4">
+        {positionMoved && (
+          <Card>
+            <CardContent className="space-y-2 pt-4">
+              <p className="text-xs text-muted-foreground">
+                {t("positionMovedHint")}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => setMarkerPosition(savedPosition)}
+                  disabled={isSavingPosition}
+                >
+                  {t("cancel")}
+                </Button>
+                <Button
+                  size="sm"
+                  className="flex-1"
+                  onClick={handleSavePosition}
+                  disabled={isSavingPosition}
+                >
+                  {isSavingPosition && (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  )}
+                  {t("savePosition")}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">{t("shapesTitle")}</CardTitle>
@@ -387,14 +477,24 @@ export function GardenMap({
                         />
                         {shape.label || shapeLabels[shape.type]}
                       </span>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={t("deleteShapeAriaLabel")}
-                        onClick={() => handleDeleteShape(shape.id)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      <span className="flex items-center gap-0.5">
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label={t("editShapeAriaLabel")}
+                          onClick={() => handleEditShape(shape)}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label={t("deleteShapeAriaLabel")}
+                          onClick={() => handleDeleteShape(shape.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -499,6 +599,70 @@ export function GardenMap({
             </Button>
             <Button onClick={confirmPendingShape} disabled={isSaving}>
               {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+              {t("save")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={editingShape !== null}
+        onOpenChange={(next) => !next && setEditingShape(null)}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>
+              {editingShape &&
+                t("editShapeTitle", { type: shapeLabels[editingShape.type] })}
+            </DialogTitle>
+            <DialogDescription />
+          </DialogHeader>
+          <div className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-shape-label">{t("label")}</Label>
+              <Input
+                id="edit-shape-label"
+                placeholder={t("labelPlaceholder")}
+                value={editLabelInput}
+                onChange={(e) => setEditLabelInput(e.target.value)}
+              />
+            </div>
+            {(editingShape?.type === "house" ||
+              editingShape?.type === "tree") && (
+              <div className="grid gap-2">
+                <Label htmlFor="edit-shape-height">{t("heightM")}</Label>
+                <Input
+                  id="edit-shape-height"
+                  type="number"
+                  step="0.1"
+                  value={editHeightInput}
+                  onChange={(e) => setEditHeightInput(e.target.value)}
+                />
+              </div>
+            )}
+            {editingShape?.type === "tree" && (
+              <div className="grid gap-2">
+                <Label htmlFor="edit-shape-radius">{t("radiusM")}</Label>
+                <Input
+                  id="edit-shape-radius"
+                  type="number"
+                  step="0.1"
+                  value={editRadiusInput}
+                  onChange={(e) => setEditRadiusInput(e.target.value)}
+                />
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEditingShape(null)}
+              disabled={isSavingEdit}
+            >
+              {t("cancel")}
+            </Button>
+            <Button onClick={confirmEditShape} disabled={isSavingEdit}>
+              {isSavingEdit && <Loader2 className="h-4 w-4 animate-spin" />}
               {t("save")}
             </Button>
           </DialogFooter>

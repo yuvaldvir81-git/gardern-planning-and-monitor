@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { ArrowLeft } from "lucide-react";
 import { getGardenWithShapes } from "../actions";
 import { GardenMapLoader } from "./garden-map-loader";
+import { GardenHeader } from "./garden-header";
 
 export default async function GardenDetailPage({
   params,
@@ -23,7 +24,7 @@ export default async function GardenDetailPage({
         <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
         {t("backToGardens")}
       </Link>
-      <h1 className="mb-4 text-2xl font-semibold tracking-tight">{result.garden.name}</h1>
+      <GardenHeader garden={result.garden} />
       <GardenMapLoader garden={result.garden} shapes={result.shapes} />
     </div>
   );
