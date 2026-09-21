@@ -359,7 +359,15 @@
     "toastAddressUpdated": "Address updated",
     "toastAddressUpdateError": "Couldn't update the address",
     "positionMovedHint": "Drag the pin, then save to update the exact garden location.",
-    "savePosition": "Save location"
+    "savePosition": "Save location",
+    "editPositions": "Edit positions",
+    "stopEditingPositions": "Stop editing positions",
+    "editPositionsHint": "Drag a shape to move it, or drag its corner points to reshape it.",
+    "savePositions": "Save positions",
+    "toastShapesRepositioned": "Shape positions updated",
+    "showShapeAriaLabel": "Show shape",
+    "hideShapeAriaLabel": "Hide shape",
+    "opacity": "Opacity"
   },
   "settings": {
     "backToStarters": "Back to starters",

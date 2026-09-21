@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-import "@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css";
+// CSS is imported globally in src/app/layout.tsx instead of here — see the
+// comment there for why (production-only blank map on a lazily loaded chunk).
 import "@geoman-io/leaflet-geoman-free";
 import {
   MapContainer,
@@ -27,6 +27,9 @@ import {
   Square,
   Loader2,
   Pencil,
+  Move,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,6 +43,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 import {
   createShape,
   updateShape,
@@ -140,6 +144,91 @@ function MapEvents({
   return null;
 }
 
+type PmLayer = L.Layer & {
+  pm: {
+    enable: (options?: Record<string, unknown>) => void;
+    disable: () => void;
+    enableLayerDrag: () => void;
+    disableLayerDrag: () => void;
+  };
+};
+
+function EditableShapeLayer({
+  shape,
+  editMode,
+  opacity,
+  resetKey,
+  onGeometryChange,
+}: {
+  shape: Shape;
+  editMode: boolean;
+  opacity: number;
+  resetKey: number;
+  onGeometryChange: (id: string, points: { lat: number; lng: number }[]) => void;
+}) {
+  const layerRef = useRef<L.Polygon | L.Circle | null>(null);
+
+  useEffect(() => {
+    const layer = layerRef.current as PmLayer | null;
+    if (!layer?.pm) return;
+    if (editMode) {
+      layer.pm.enable({ allowSelfIntersection: false });
+      layer.pm.enableLayerDrag();
+    } else {
+      layer.pm.disable();
+      layer.pm.disableLayerDrag();
+    }
+  }, [editMode]);
+
+  function handleChange() {
+    const layer = layerRef.current;
+    if (!layer) return;
+    if (shape.type === "tree") {
+      const center = (layer as L.Circle).getLatLng();
+      onGeometryChange(shape.id, [{ lat: center.lat, lng: center.lng }]);
+    } else {
+      onGeometryChange(shape.id, extractPolygonPoints(layer as L.Layer));
+    }
+  }
+
+  const color = SHAPE_COLORS[shape.type];
+  const eventHandlers = {
+    "pm:dragend": handleChange,
+    "pm:edit": handleChange,
+    "pm:markerdragend": handleChange,
+  };
+
+  if (shape.type === "tree") {
+    const center = shape.points[0];
+    const radius = shape.radiusM ? Number(shape.radiusM) : DEFAULT_TREE_RADIUS_M;
+    return (
+      <Circle
+        key={`${shape.id}-${resetKey}`}
+        ref={layerRef as React.RefObject<L.Circle>}
+        center={[center.lat, center.lng]}
+        radius={radius}
+        pathOptions={{ color, fillColor: color, fillOpacity: opacity }}
+        eventHandlers={eventHandlers}
+      />
+    );
+  }
+
+  return (
+    <Polygon
+      key={`${shape.id}-${resetKey}`}
+      ref={layerRef as React.RefObject<L.Polygon>}
+      positions={shape.points.map((p) => [p.lat, p.lng])}
+      pathOptions={{
+        color,
+        fillColor: color,
+        fillOpacity: opacity,
+        dashArray: shape.type === "boundary" ? "6 6" : undefined,
+      }}
+      eventHandlers={eventHandlers}
+    />
+  );
+}
+
 export function GardenMap({
   garden,
   shapes,
@@ -167,6 +256,61 @@ export function GardenMap({
   const [isSavingPosition, setIsSavingPosition] = useState(false);
   const positionMoved =
     markerPosition[0] !== savedPosition[0] || markerPosition[1] !== savedPosition[1];
+  const [hiddenShapeIds, setHiddenShapeIds] = useState<Set<string>>(new Set());
+  const [shapeOpacity, setShapeOpacity] = useState<Record<string, number>>({});
+  const [editPositionsMode, setEditPositionsMode] = useState(false);
+  const [shapeOverrides, setShapeOverrides] = useState<
+    Record<string, { lat: number; lng: number }[]>
+  >({});
+  const [isSavingShapes, setIsSavingShapes] = useState(false);
+  const [resetKey, setResetKey] = useState(0);
+
+  function defaultOpacity(type: ShapeType) {
+    if (type === "boundary") return 0;
+    if (type === "tree") return 0.6;
+    return 0.3;
+  }
+
+  function getOpacity(shape: Shape) {
+    return shapeOpacity[shape.id] ?? defaultOpacity(shape.type);
+  }
+
+  function toggleVisibility(id: string) {
+    setHiddenShapeIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function handleGeometryChange(id: string, points: { lat: number; lng: number }[]) {
+    setShapeOverrides((prev) => ({ ...prev, [id]: points }));
+  }
+
+  async function handleSaveShapePositions() {
+    setIsSavingShapes(true);
+    try {
+      await Promise.all(
+        Object.entries(shapeOverrides).map(([id, points]) => updateShape(id, { points }))
+      );
+      toast.success(t("toastShapesRepositioned"));
+      setShapeOverrides({});
+      setEditPositionsMode(false);
+      setResetKey((k) => k + 1);
+      router.refresh();
+    } catch {
+      toast.error(t("sunComputeError"));
+    } finally {
+      setIsSavingShapes(false);
+    }
+  }
+
+  function handleCancelShapePositions() {
+    setShapeOverrides({});
+    setEditPositionsMode(false);
+    setResetKey((k) => k + 1);
+  }
 
   async function handleSavePosition() {
     setIsSavingPosition(true);
@@ -332,35 +476,18 @@ export function GardenMap({
               }}
             />
 
-            {shapes.map((shape) => {
-              const color = SHAPE_COLORS[shape.type];
-              if (shape.type === "tree") {
-                const center = shape.points[0];
-                const radius = shape.radiusM
-                  ? Number(shape.radiusM)
-                  : DEFAULT_TREE_RADIUS_M;
-                return (
-                  <Circle
-                    key={shape.id}
-                    center={[center.lat, center.lng]}
-                    radius={radius}
-                    pathOptions={{ color, fillColor: color, fillOpacity: 0.6 }}
-                  />
-                );
-              }
-              return (
-                <Polygon
+            {shapes
+              .filter((shape) => !hiddenShapeIds.has(shape.id))
+              .map((shape) => (
+                <EditableShapeLayer
                   key={shape.id}
-                  positions={shape.points.map((p) => [p.lat, p.lng])}
-                  pathOptions={{
-                    color,
-                    fillColor: color,
-                    fillOpacity: shape.type === "boundary" ? 0 : 0.3,
-                    dashArray: shape.type === "boundary" ? "6 6" : undefined,
-                  }}
+                  shape={shape}
+                  editMode={editPositionsMode}
+                  opacity={getOpacity(shape)}
+                  resetKey={resetKey}
+                  onGeometryChange={handleGeometryChange}
                 />
-              );
-            })}
+              ))}
 
             {sunGrid?.map((cell, i) => (
               <CircleMarker
@@ -420,6 +547,7 @@ export function GardenMap({
               <Button
                 variant="outline"
                 size="sm"
+                disabled={editPositionsMode}
                 onClick={() => startDraw("boundary")}
               >
                 <Square className="h-4 w-4" />
@@ -428,6 +556,7 @@ export function GardenMap({
               <Button
                 variant="outline"
                 size="sm"
+                disabled={editPositionsMode}
                 onClick={() => startDraw("house")}
               >
                 <Home className="h-4 w-4" />
@@ -436,6 +565,7 @@ export function GardenMap({
               <Button
                 variant="outline"
                 size="sm"
+                disabled={editPositionsMode}
                 onClick={() => startDraw("tree")}
               >
                 <TreePine className="h-4 w-4" />
@@ -444,6 +574,7 @@ export function GardenMap({
               <Button
                 variant="outline"
                 size="sm"
+                disabled={editPositionsMode}
                 onClick={() => startDraw("vegetable_plot")}
               >
                 <Sprout className="h-4 w-4" />
@@ -453,50 +584,135 @@ export function GardenMap({
                 variant="outline"
                 size="sm"
                 className="col-span-2"
+                disabled={editPositionsMode}
                 onClick={() => startDraw("green_patch")}
               >
                 <Sprout className="h-4 w-4" />
                 {t("drawPatch")}
               </Button>
+              <Button
+                variant={editPositionsMode ? "default" : "outline"}
+                size="sm"
+                className="col-span-2"
+                onClick={() =>
+                  editPositionsMode
+                    ? handleCancelShapePositions()
+                    : setEditPositionsMode(true)
+                }
+              >
+                <Move className="h-4 w-4" />
+                {editPositionsMode ? t("stopEditingPositions") : t("editPositions")}
+              </Button>
             </div>
+
+            {editPositionsMode && (
+              <div className="space-y-2 border-t pt-2">
+                <p className="text-xs text-muted-foreground">
+                  {t("editPositionsHint")}
+                </p>
+                {Object.keys(shapeOverrides).length > 0 && (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={handleCancelShapePositions}
+                      disabled={isSavingShapes}
+                    >
+                      {t("cancel")}
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="flex-1"
+                      onClick={handleSaveShapePositions}
+                      disabled={isSavingShapes}
+                    >
+                      {isSavingShapes && (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      )}
+                      {t("savePositions")}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="border-t pt-2">
               {shapes.length === 0 ? (
                 <p className="text-xs text-muted-foreground">{t("noShapes")}</p>
               ) : (
-                <ul className="space-y-1">
-                  {shapes.map((shape) => (
-                    <li
-                      key={shape.id}
-                      className="flex items-center justify-between text-sm"
-                    >
-                      <span className="flex items-center gap-1.5">
-                        <span
-                          className="size-2.5 rounded-full"
-                          style={{ backgroundColor: SHAPE_COLORS[shape.type] }}
-                        />
-                        {shape.label || shapeLabels[shape.type]}
-                      </span>
-                      <span className="flex items-center gap-0.5">
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          aria-label={t("editShapeAriaLabel")}
-                          onClick={() => handleEditShape(shape)}
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          aria-label={t("deleteShapeAriaLabel")}
-                          onClick={() => handleDeleteShape(shape.id)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </span>
-                    </li>
-                  ))}
+                <ul className="space-y-2">
+                  {shapes.map((shape) => {
+                    const hidden = hiddenShapeIds.has(shape.id);
+                    return (
+                      <li key={shape.id} className="space-y-1 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="flex items-center gap-1.5">
+                            <span
+                              className="size-2.5 rounded-full"
+                              style={{ backgroundColor: SHAPE_COLORS[shape.type] }}
+                            />
+                            <span className={hidden ? "text-muted-foreground" : ""}>
+                              {shape.label || shapeLabels[shape.type]}
+                            </span>
+                          </span>
+                          <span className="flex items-center gap-0.5">
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              aria-label={
+                                hidden ? t("showShapeAriaLabel") : t("hideShapeAriaLabel")
+                              }
+                              onClick={() => toggleVisibility(shape.id)}
+                            >
+                              {hidden ? (
+                                <EyeOff className="h-3.5 w-3.5" />
+                              ) : (
+                                <Eye className="h-3.5 w-3.5" />
+                              )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              aria-label={t("editShapeAriaLabel")}
+                              onClick={() => handleEditShape(shape)}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              aria-label={t("deleteShapeAriaLabel")}
+                              onClick={() => handleDeleteShape(shape.id)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </span>
+                        </div>
+                        {!hidden && (
+                          <div className="flex items-center gap-2 ps-4">
+                            <span className="text-xs text-muted-foreground">
+                              {t("opacity")}
+                            </span>
+                            <Slider
+                              value={[Math.round(getOpacity(shape) * 100)]}
+                              min={0}
+                              max={100}
+                              step={5}
+                              onValueChange={(value) => {
+                                const percent = Array.isArray(value) ? value[0] : value;
+                                setShapeOpacity((prev) => ({
+                                  ...prev,
+                                  [shape.id]: percent / 100,
+                                }));
+                              }}
+                              className="flex-1"
+                            />
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>

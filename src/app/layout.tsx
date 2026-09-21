@@ -7,6 +7,13 @@ import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
+// Imported globally, not inside the map component: that component loads via
+// next/dynamic(ssr:false), so its own CSS import ships as part of a lazily
+// fetched chunk with no server-render pass to discover it up front. Under
+// real network latency (unlike localhost) that chunk's CSS sometimes lost
+// the race against first paint, leaving the map invisible on Vercel only.
+import "leaflet/dist/leaflet.css";
+import "@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

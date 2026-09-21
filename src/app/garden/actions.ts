@@ -165,7 +165,12 @@ async function requireOwnedShape(id: string, userId: string) {
 
 export async function updateShape(
   id: string,
-  values: { label?: string; heightM?: number | null; radiusM?: number | null }
+  values: {
+    label?: string;
+    heightM?: number | null;
+    radiusM?: number | null;
+    points?: { lat: number; lng: number }[];
+  }
 ) {
   const userId = await requireUserId();
   const { gardenId } = await requireOwnedShape(id, userId);
@@ -181,6 +186,7 @@ export async function updateShape(
       ...(values.radiusM !== undefined
         ? { radiusM: values.radiusM != null ? String(values.radiusM) : null }
         : {}),
+      ...(values.points !== undefined ? { points: values.points } : {}),
       updatedAt: new Date(),
     })
     .where(eq(gardenShapes.id, id));

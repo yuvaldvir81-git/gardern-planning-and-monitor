@@ -359,7 +359,15 @@
     "toastAddressUpdated": "הכתובת עודכנה",
     "toastAddressUpdateError": "לא ניתן לעדכן את הכתובת",
     "positionMovedHint": "גררו את הסיכה ואז שמרו כדי לעדכן את המיקום המדויק של הגינה.",
-    "savePosition": "שמירת מיקום"
+    "savePosition": "שמירת מיקום",
+    "editPositions": "עריכת מיקומים",
+    "stopEditingPositions": "הפסקת עריכת מיקומים",
+    "editPositionsHint": "גררו צורה כדי להזיז אותה, או גררו את נקודות הפינה שלה כדי לשנות את צורתה.",
+    "savePositions": "שמירת מיקומים",
+    "toastShapesRepositioned": "מיקומי הצורות עודכנו",
+    "showShapeAriaLabel": "הצגת צורה",
+    "hideShapeAriaLabel": "הסתרת צורה",
+    "opacity": "שקיפות"
   },
   "settings": {
     "backToStarters": "חזרה לשתילים",
