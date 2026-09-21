@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { DirectionProvider } from "@base-ui/react/direction-provider";
 import { ClerkProvider } from "@clerk/nextjs";
 import { enUS, heIL } from "@clerk/localizations";
 import { NextIntlClientProvider } from "next-intl";
@@ -46,8 +47,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       >
         <body className="min-h-full flex flex-col">
           <NextIntlClientProvider messages={messages}>
-            <TooltipProvider>{children}</TooltipProvider>
-            <Toaster />
+            <DirectionProvider direction={dir}>
+              <TooltipProvider>{children}</TooltipProvider>
+              <Toaster />
+            </DirectionProvider>
           </NextIntlClientProvider>
         </body>
       </html>
