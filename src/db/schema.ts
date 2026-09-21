@@ -141,6 +141,8 @@ export const gardenShapes = pgTable("garden_shapes", {
     .references(() => gardens.id, { onDelete: "cascade" }),
   type: gardenShapeType("type").notNull(),
   label: text("label"),
+  /** Hex color override, e.g. "#16a34a". Null falls back to the type's default color. */
+  color: text("color"),
   /** Array of {lat, lng} vertices. A single-point array for trees (center point). */
   points: jsonb("points").notNull().$type<{ lat: number; lng: number }[]>(),
   /** Obstacle height in meters — set for house/tree, null for boundary/plot/patch. */

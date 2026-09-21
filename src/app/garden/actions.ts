@@ -126,6 +126,7 @@ export async function createShape(
   values: {
     type: ShapeType;
     label?: string;
+    color?: string | null;
     points: { lat: number; lng: number }[];
     heightM?: number | null;
     radiusM?: number | null;
@@ -144,6 +145,7 @@ export async function createShape(
     gardenId,
     type: values.type,
     label: values.label || null,
+    color: values.color || null,
     points: values.points,
     heightM: values.heightM != null ? String(values.heightM) : null,
     radiusM: values.radiusM != null ? String(values.radiusM) : null,
@@ -167,6 +169,7 @@ export async function updateShape(
   id: string,
   values: {
     label?: string;
+    color?: string | null;
     heightM?: number | null;
     radiusM?: number | null;
     points?: { lat: number; lng: number }[];
@@ -180,6 +183,7 @@ export async function updateShape(
     .update(gardenShapes)
     .set({
       ...(values.label !== undefined ? { label: values.label || null } : {}),
+      ...(values.color !== undefined ? { color: values.color || null } : {}),
       ...(values.heightM !== undefined
         ? { heightM: values.heightM != null ? String(values.heightM) : null }
         : {}),

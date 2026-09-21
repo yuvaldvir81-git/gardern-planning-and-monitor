@@ -339,6 +339,7 @@
     "editShapeAriaLabel": "Edit shape",
     "label": "Label",
     "labelPlaceholder": "Optional name",
+    "color": "Color",
     "heightM": "Height (meters)",
     "radiusM": "Canopy radius (meters)",
     "save": "Save",

@@ -77,6 +77,22 @@ const SHAPE_COLORS: Record<ShapeType, string> = {
   green_patch: "#4ade80",
 };
 
+const SHAPE_COLOR_PRESETS = [
+  "#94a3b8",
+  "#78716c",
+  "#16a34a",
+  "#ea580c",
+  "#4ade80",
+  "#2563eb",
+  "#dc2626",
+  "#a855f7",
+  "#eab308",
+];
+
+function getShapeColor(shape: Shape): string {
+  return shape.color || SHAPE_COLORS[shape.type];
+}
+
 const DEFAULT_TREE_RADIUS_M = 1.5;
 
 function sunHoursColor(hours: number): string {
@@ -191,7 +207,7 @@ function EditableShapeLayer({
     }
   }
 
-  const color = SHAPE_COLORS[shape.type];
+  const color = getShapeColor(shape);
   const eventHandlers = {
     "pm:dragend": handleChange,
     "pm:edit": handleChange,
@@ -241,6 +257,7 @@ export function GardenMap({
   const mapRef = useRef<L.Map | null>(null);
   const [pendingShape, setPendingShape] = useState<PendingShape | null>(null);
   const [labelInput, setLabelInput] = useState("");
+  const [colorInput, setColorInput] = useState("");
   const [heightInput, setHeightInput] = useState("");
   const [radiusInput, setRadiusInput] = useState(String(DEFAULT_TREE_RADIUS_M));
   const [isSaving, setIsSaving] = useState(false);
@@ -248,6 +265,7 @@ export function GardenMap({
   const [isComputingSun, setIsComputingSun] = useState(false);
   const [editingShape, setEditingShape] = useState<Shape | null>(null);
   const [editLabelInput, setEditLabelInput] = useState("");
+  const [editColorInput, setEditColorInput] = useState("");
   const [editHeightInput, setEditHeightInput] = useState("");
   const [editRadiusInput, setEditRadiusInput] = useState("");
   const [isSavingEdit, setIsSavingEdit] = useState(false);
@@ -339,6 +357,7 @@ export function GardenMap({
   function handleCreate(shape: PendingShape) {
     setPendingShape(shape);
     setLabelInput("");
+    setColorInput(SHAPE_COLORS[shape.type]);
     setHeightInput(shape.type === "house" ? "6" : "4");
     setRadiusInput(String(DEFAULT_TREE_RADIUS_M));
   }
@@ -350,6 +369,7 @@ export function GardenMap({
       await createShape(garden.id, {
         type: pendingShape.type,
         label: labelInput,
+        color: colorInput !== SHAPE_COLORS[pendingShape.type] ? colorInput : null,
         points: pendingShape.points,
         heightM:
           pendingShape.type === "house" || pendingShape.type === "tree"
@@ -383,6 +403,7 @@ export function GardenMap({
   function handleEditShape(shape: Shape) {
     setEditingShape(shape);
     setEditLabelInput(shape.label ?? "");
+    setEditColorInput(getShapeColor(shape));
     setEditHeightInput(shape.heightM ?? "");
     setEditRadiusInput(shape.radiusM ?? String(DEFAULT_TREE_RADIUS_M));
   }
@@ -393,6 +414,7 @@ export function GardenMap({
     try {
       await updateShape(editingShape.id, {
         label: editLabelInput,
+        color: editColorInput !== SHAPE_COLORS[editingShape.type] ? editColorInput : null,
         heightM:
           editingShape.type === "house" || editingShape.type === "tree"
             ? Number(editHeightInput) || null
@@ -669,7 +691,7 @@ export function GardenMap({
                           <span className="flex items-center gap-1.5">
                             <span
                               className="size-2.5 rounded-full"
-                              style={{ backgroundColor: SHAPE_COLORS[shape.type] }}
+                              style={{ backgroundColor: getShapeColor(shape) }}
                             />
                             <span className={hidden ? "text-muted-foreground" : ""}>
                               {shape.label || shapeLabels[shape.type]}
@@ -798,6 +820,30 @@ export function GardenMap({
                 onChange={(e) => setLabelInput(e.target.value)}
               />
             </div>
+            <div className="grid gap-2">
+              <Label htmlFor="shape-color">{t("color")}</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="shape-color"
+                  type="color"
+                  className="h-9 w-14 p-1"
+                  value={colorInput}
+                  onChange={(e) => setColorInput(e.target.value)}
+                />
+                <div className="flex flex-wrap gap-1.5">
+                  {SHAPE_COLOR_PRESETS.map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      aria-label={preset}
+                      className="size-6 rounded-full ring-1 ring-foreground/10"
+                      style={{ backgroundColor: preset }}
+                      onClick={() => setColorInput(preset)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
             {(pendingShape?.type === "house" ||
               pendingShape?.type === "tree") && (
               <div className="grid gap-2">
@@ -861,6 +907,30 @@ export function GardenMap({
                 value={editLabelInput}
                 onChange={(e) => setEditLabelInput(e.target.value)}
               />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-shape-color">{t("color")}</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="edit-shape-color"
+                  type="color"
+                  className="h-9 w-14 p-1"
+                  value={editColorInput}
+                  onChange={(e) => setEditColorInput(e.target.value)}
+                />
+                <div className="flex flex-wrap gap-1.5">
+                  {SHAPE_COLOR_PRESETS.map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      aria-label={preset}
+                      className="size-6 rounded-full ring-1 ring-foreground/10"
+                      style={{ backgroundColor: preset }}
+                      onClick={() => setEditColorInput(preset)}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
             {(editingShape?.type === "house" ||
               editingShape?.type === "tree") && (

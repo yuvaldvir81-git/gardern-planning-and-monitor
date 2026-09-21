@@ -339,6 +339,7 @@
     "editShapeAriaLabel": "עריכת צורה",
     "label": "תווית",
     "labelPlaceholder": "שם אופציונלי",
+    "color": "צבע",
     "heightM": "גובה (מטרים)",
     "radiusM": "רדיוס הצמרת (מטרים)",
     "save": "שמירה",
