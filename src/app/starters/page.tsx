@@ -19,9 +19,9 @@ export default async function StartersPage() {
 
   return (
     <div className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
         <span className="text-sm font-medium text-muted-foreground">{t("appName")}</span>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           <Link
             href="/garden"
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"

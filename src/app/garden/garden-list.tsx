@@ -40,7 +40,7 @@ export function GardenList({ gardens }: { gardens: Garden[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">{t("listTitle")}</h1>
         <Button render={<Link href="/garden/new" />}>
           <Plus className="h-4 w-4" />

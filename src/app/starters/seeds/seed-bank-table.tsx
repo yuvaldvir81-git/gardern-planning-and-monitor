@@ -67,7 +67,7 @@ export function SeedBankTable({ seedTypes }: { seedTypes: SeedType[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
         {missingCount > 0 && (
           <Button onClick={handleGenerateAll} disabled={isGeneratingAll}>
