@@ -433,23 +433,27 @@ export function GardenMap({
   };
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_20rem]">
+    <div className="garden-map-layout grid gap-4">
+      {/*
+        Plain inline <style>, not Tailwind's arbitrary-value classes
+        (h-[60vh], lg:h-[75vh], lg:grid-cols-[1fr_20rem]): those reliably
+        failed to take effect in the Vercel production build (confirmed via
+        devtools — manually setting height/grid-template-columns in the
+        inspector fixed it instantly) while working locally, even from a
+        clean production build — a Tailwind/minifier discrepancy specific
+        to Vercel's build toolchain we couldn't pin down further. A literal
+        <style> tag sidesteps Tailwind's CSS generation entirely, so it
+        can't be affected by whatever that discrepancy is.
+      */}
+      <style>{`
+        .garden-map-layout { grid-template-columns: 1fr; }
+        .garden-map-container { height: 60vh; }
+        @media (min-width: 1024px) {
+          .garden-map-layout { grid-template-columns: 1fr 20rem; }
+          .garden-map-container { height: 75vh; }
+        }
+      `}</style>
       <MapErrorBoundary>
-        {/*
-          Plain inline <style>, not Tailwind's h-[60vh]/lg:h-[75vh] classes:
-          those arbitrary-value utilities reliably failed to take effect in
-          the Vercel production build (confirmed by manually setting height
-          in devtools, which made the map appear) while working locally —
-          a build-specific Tailwind/minifier discrepancy we couldn't pin
-          down further. A literal <style> tag sidesteps Tailwind's CSS
-          generation entirely, so it can't be affected by that pipeline.
-        */}
-        <style>{`
-          .garden-map-container { height: 60vh; }
-          @media (min-width: 1024px) {
-            .garden-map-container { height: 75vh; }
-          }
-        `}</style>
         <div className="garden-map-container relative isolate overflow-hidden rounded-lg border">
           <MapContainer
             center={[Number(garden.lat), Number(garden.lng)]}

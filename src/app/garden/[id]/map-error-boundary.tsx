@@ -15,7 +15,10 @@ export class MapErrorBoundary extends Component<
   render() {
     if (this.state.error) {
       return (
-        <div className="flex h-[60vh] flex-col items-center justify-center gap-2 rounded-lg border border-destructive/50 bg-destructive/5 p-4 text-center lg:h-[75vh]">
+        <div
+          className="flex flex-col items-center justify-center gap-2 rounded-lg border border-destructive/50 bg-destructive/5 p-4 text-center"
+          style={{ height: "65vh" }}
+        >
           <p className="font-medium text-destructive">Map failed to load</p>
           <p className="max-w-md text-sm text-muted-foreground">
             {this.state.error.message}

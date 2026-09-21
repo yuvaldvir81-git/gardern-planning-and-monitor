@@ -7,6 +7,8 @@ export const GardenMapLoader = dynamic(
   () => import("./garden-map").then((mod) => mod.GardenMap),
   {
     ssr: false,
-    loading: () => <Skeleton className="h-[60vh] w-full rounded-lg lg:h-[75vh]" />,
+    loading: () => (
+      <Skeleton className="w-full rounded-lg" style={{ height: "65vh" }} />
+    ),
   }
 );
