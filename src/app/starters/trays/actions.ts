@@ -258,6 +258,7 @@ export type TrayCellChange = {
   colIndex: number;
   name: string;
   photoUrl?: string | null;
+  datePlanted?: string;
 };
 
 export async function updateTrayCells(trayId: string, changes: TrayCellChange[]) {
@@ -282,12 +283,15 @@ export async function updateTrayCells(trayId: string, changes: TrayCellChange[])
     const key = `${change.rowIndex}:${change.colIndex}`;
     const existingStarter = existingByPosition.get(key);
     if (existingStarter) {
-      if (existingStarter.name !== name || change.photoUrl !== undefined) {
+      const dateChanged =
+        change.datePlanted !== undefined && change.datePlanted !== existingStarter.datePlanted;
+      if (existingStarter.name !== name || change.photoUrl !== undefined || dateChanged) {
         await db
           .update(plantStarters)
           .set({
             name,
             ...(change.photoUrl !== undefined ? { photoUrl: change.photoUrl || null } : {}),
+            ...(dateChanged ? { datePlanted: change.datePlanted } : {}),
             updatedAt: new Date(),
           })
           .where(eq(plantStarters.id, existingStarter.id));
@@ -307,7 +311,7 @@ export async function updateTrayCells(trayId: string, changes: TrayCellChange[])
         colIndex: c.colIndex,
         name: c.name,
         photoUrl: c.photoUrl || null,
-        datePlanted: tray.datePlanted,
+        datePlanted: c.datePlanted || tray.datePlanted,
         location: tray.location,
         seedSource: tray.seedSource,
         status: "seed" as const,
