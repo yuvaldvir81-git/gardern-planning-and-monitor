@@ -233,18 +233,40 @@ export async function computeGardenSunExposure(gardenId: string): Promise<SunGri
 
   const origin = { lat: Number(garden.lat), lng: Number(garden.lng) };
 
-  const obstacles: Obstacle[] = shapes
-    .filter((s) => (s.type === "house" || s.type === "tree") && s.heightM)
-    .map((s) => {
-      if (s.type === "tree") {
-        const radius = s.radiusM ? Number(s.radiusM) : DEFAULT_TREE_RADIUS_M;
-        return { points: circleToPolygon(s.points[0], radius), heightM: Number(s.heightM) };
-      }
-      return { points: s.points, heightM: Number(s.heightM) };
-    });
+  const obstacleShapes = shapes.filter(
+    (s) => (s.type === "house" || s.type === "tree") && s.heightM
+  );
+  function toObstacle(s: (typeof obstacleShapes)[number]): Obstacle {
+    if (s.type === "tree") {
+      const radius = s.radiusM ? Number(s.radiusM) : DEFAULT_TREE_RADIUS_M;
+      return { points: circleToPolygon(s.points[0], radius), heightM: Number(s.heightM) };
+    }
+    return { points: s.points, heightM: Number(s.heightM) };
+  }
 
-  const grid = buildSampleGrid(boundary.points, 12);
-  const hours = computeSunHours(grid, obstacles, origin);
+  // Only sample where it's actually useful for planning — trees and
+  // vegetable plots — rather than the whole boundary (which usually also
+  // covers the house footprint, patios, and paths).
+  const targets = shapes.filter((s) => s.type === "tree" || s.type === "vegetable_plot");
+  const results: SunGridResult = [];
 
-  return grid.map((p, i) => ({ lat: p.lat, lng: p.lng, hours: hours[i] }));
+  for (const target of targets) {
+    const targetPoints =
+      target.type === "tree"
+        ? circleToPolygon(
+            target.points[0],
+            target.radiusM ? Number(target.radiusM) : DEFAULT_TREE_RADIUS_M
+          )
+        : target.points;
+    const grid = buildSampleGrid(targetPoints, target.type === "tree" ? 6 : 12);
+    // A tree's shadow hull always covers its own footprint (it's the convex
+    // hull of the footprint and its shifted copy), so a tree can never
+    // register sun on itself in this model — exclude it from its own
+    // obstacle list while still shading it with every other obstacle.
+    const obstacles = obstacleShapes.filter((s) => s.id !== target.id).map(toObstacle);
+    const hours = computeSunHours(grid, obstacles, origin);
+    grid.forEach((p, i) => results.push({ lat: p.lat, lng: p.lng, hours: hours[i] }));
+  }
+
+  return results;
 }
