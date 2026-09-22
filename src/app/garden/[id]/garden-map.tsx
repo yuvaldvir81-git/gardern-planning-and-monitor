@@ -268,6 +268,7 @@ export function GardenMap({
   const [editColorInput, setEditColorInput] = useState("");
   const [editHeightInput, setEditHeightInput] = useState("");
   const [editRadiusInput, setEditRadiusInput] = useState("");
+  const [editPointHeights, setEditPointHeights] = useState<string[]>([]);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const savedPosition: [number, number] = [Number(garden.lat), Number(garden.lng)];
   const [markerPosition, setMarkerPosition] = useState<[number, number]>(savedPosition);
@@ -406,12 +407,15 @@ export function GardenMap({
     setEditColorInput(getShapeColor(shape));
     setEditHeightInput(shape.heightM ?? "");
     setEditRadiusInput(shape.radiusM ?? String(DEFAULT_TREE_RADIUS_M));
+    setEditPointHeights(shape.points.map((p) => (p.heightM != null ? String(p.heightM) : "")));
   }
 
   async function confirmEditShape() {
     if (!editingShape) return;
     setIsSavingEdit(true);
     try {
+      const hasPointHeights =
+        editingShape.type === "house" && editPointHeights.some((h) => h.trim() !== "");
       await updateShape(editingShape.id, {
         label: editLabelInput,
         color: editColorInput !== SHAPE_COLORS[editingShape.type] ? editColorInput : null,
@@ -423,6 +427,13 @@ export function GardenMap({
           editingShape.type === "tree"
             ? Number(editRadiusInput) || DEFAULT_TREE_RADIUS_M
             : undefined,
+        points: hasPointHeights
+          ? editingShape.points.map((p, i) => ({
+              lat: p.lat,
+              lng: p.lng,
+              heightM: editPointHeights[i]?.trim() ? Number(editPointHeights[i]) : undefined,
+            }))
+          : undefined,
       });
       toast.success(t("toastShapeUpdated"));
       setEditingShape(null);
@@ -952,6 +963,36 @@ export function GardenMap({
                   value={editHeightInput}
                   onChange={(e) => setEditHeightInput(e.target.value)}
                 />
+              </div>
+            )}
+            {editingShape?.type === "house" && (
+              <div className="grid gap-2">
+                <Label>{t("pointHeights")}</Label>
+                <p className="text-xs text-muted-foreground">{t("pointHeightsHint")}</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {editPointHeights.map((value, i) => (
+                    <div key={i} className="grid gap-1">
+                      <Label
+                        htmlFor={`edit-point-height-${i}`}
+                        className="text-xs text-muted-foreground"
+                      >
+                        {t("pointN", { n: i + 1 })}
+                      </Label>
+                      <Input
+                        id={`edit-point-height-${i}`}
+                        type="number"
+                        step="0.1"
+                        placeholder={editHeightInput || "—"}
+                        value={value}
+                        onChange={(e) =>
+                          setEditPointHeights((prev) =>
+                            prev.map((x, j) => (j === i ? e.target.value : x))
+                          )
+                        }
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
             {editingShape?.type === "tree" && (

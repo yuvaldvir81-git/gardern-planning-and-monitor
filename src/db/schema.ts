@@ -143,9 +143,18 @@ export const gardenShapes = pgTable("garden_shapes", {
   label: text("label"),
   /** Hex color override, e.g. "#16a34a". Null falls back to the type's default color. */
   color: text("color"),
-  /** Array of {lat, lng} vertices. A single-point array for trees (center point). */
-  points: jsonb("points").notNull().$type<{ lat: number; lng: number }[]>(),
-  /** Obstacle height in meters — set for house/tree, null for boundary/plot/patch. */
+  /**
+   * Array of {lat, lng, heightM?} vertices. A single-point array for trees
+   * (center point). Per-point heightM overrides the shape's flat `heightM`
+   * below for that one corner — set on some but not all points to model a
+   * sloped roof; the shadow cast by each point uses its own height, so a
+   * uniform height across every point (the default) behaves exactly like a
+   * flat roof.
+   */
+  points: jsonb("points")
+    .notNull()
+    .$type<{ lat: number; lng: number; heightM?: number }[]>(),
+  /** Obstacle height in meters — set for house/tree, null for boundary/plot/patch. Fallback for points without their own heightM. */
   heightM: numeric("height_m", { precision: 5, scale: 2 }),
   /** Canopy radius in meters — set for tree only. */
   radiusM: numeric("radius_m", { precision: 6, scale: 2 }),

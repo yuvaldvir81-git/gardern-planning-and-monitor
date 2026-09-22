@@ -127,7 +127,7 @@ export async function createShape(
     type: ShapeType;
     label?: string;
     color?: string | null;
-    points: { lat: number; lng: number }[];
+    points: { lat: number; lng: number; heightM?: number }[];
     heightM?: number | null;
     radiusM?: number | null;
   }
@@ -172,7 +172,7 @@ export async function updateShape(
     color?: string | null;
     heightM?: number | null;
     radiusM?: number | null;
-    points?: { lat: number; lng: number }[];
+    points?: { lat: number; lng: number; heightM?: number }[];
   }
 ) {
   const userId = await requireUserId();
@@ -229,53 +229,58 @@ function circleToPolygon(center: { lat: number; lng: number }, radiusM: number):
 }
 
 export async function computeGardenSunExposure(gardenId: string): Promise<SunExposureResult> {
-  const result = await getGardenWithShapes(gardenId);
-  if (!result) throw new Error("Garden not found");
-  const { garden, shapes } = result;
+  try {
+    const result = await getGardenWithShapes(gardenId);
+    if (!result) throw new Error("Garden not found");
+    const { garden, shapes } = result;
 
-  const boundary = shapes.find((s) => s.type === "boundary");
-  if (!boundary) throw new Error("Draw a garden boundary first");
+    const boundary = shapes.find((s) => s.type === "boundary");
+    if (!boundary) throw new Error("Draw a garden boundary first");
 
-  const origin = { lat: Number(garden.lat), lng: Number(garden.lng) };
+    const origin = { lat: Number(garden.lat), lng: Number(garden.lng) };
 
-  const obstacleShapes = shapes.filter(
-    (s) => (s.type === "house" || s.type === "tree") && s.heightM
-  );
-  function toObstacle(s: (typeof obstacleShapes)[number]): Obstacle {
-    if (s.type === "tree") {
-      const radius = s.radiusM ? Number(s.radiusM) : DEFAULT_TREE_RADIUS_M;
-      return { points: circleToPolygon(s.points[0], radius), heightM: Number(s.heightM) };
+    const obstacleShapes = shapes.filter(
+      (s) => (s.type === "house" || s.type === "tree") && s.heightM
+    );
+    function toObstacle(s: (typeof obstacleShapes)[number]): Obstacle {
+      if (s.type === "tree") {
+        const radius = s.radiusM ? Number(s.radiusM) : DEFAULT_TREE_RADIUS_M;
+        return { points: circleToPolygon(s.points[0], radius), heightM: Number(s.heightM) };
+      }
+      return { points: s.points, heightM: Number(s.heightM) };
     }
-    return { points: s.points, heightM: Number(s.heightM) };
+
+    // Only sample where it's actually useful for planning — trees and
+    // vegetable plots — rather than the whole boundary (which usually also
+    // covers the house footprint, patios, and paths).
+    const targets = shapes.filter((s) => s.type === "tree" || s.type === "vegetable_plot");
+    const points: SunGridPoint[] = [];
+    const shapeAverages: Record<string, number> = {};
+
+    for (const target of targets) {
+      const targetPoints =
+        target.type === "tree"
+          ? circleToPolygon(
+              target.points[0],
+              target.radiusM ? Number(target.radiusM) : DEFAULT_TREE_RADIUS_M
+            )
+          : target.points;
+      const grid = buildSampleGrid(targetPoints, target.type === "tree" ? 6 : 12);
+      // A tree's shadow hull always covers its own footprint (it's the convex
+      // hull of the footprint and its shifted copy), so a tree can never
+      // register sun on itself in this model — exclude it from its own
+      // obstacle list while still shading it with every other obstacle.
+      const obstacles = obstacleShapes.filter((s) => s.id !== target.id).map(toObstacle);
+      const hours = computeSunHours(grid, obstacles, origin);
+      grid.forEach((p, i) => points.push({ lat: p.lat, lng: p.lng, hours: hours[i] }));
+      shapeAverages[target.id] = hours.length
+        ? hours.reduce((sum, h) => sum + h, 0) / hours.length
+        : 0;
+    }
+
+    return { points, shapeAverages };
+  } catch (err) {
+    console.error("computeGardenSunExposure failed:", err);
+    throw err;
   }
-
-  // Only sample where it's actually useful for planning — trees and
-  // vegetable plots — rather than the whole boundary (which usually also
-  // covers the house footprint, patios, and paths).
-  const targets = shapes.filter((s) => s.type === "tree" || s.type === "vegetable_plot");
-  const points: SunGridPoint[] = [];
-  const shapeAverages: Record<string, number> = {};
-
-  for (const target of targets) {
-    const targetPoints =
-      target.type === "tree"
-        ? circleToPolygon(
-            target.points[0],
-            target.radiusM ? Number(target.radiusM) : DEFAULT_TREE_RADIUS_M
-          )
-        : target.points;
-    const grid = buildSampleGrid(targetPoints, target.type === "tree" ? 6 : 12);
-    // A tree's shadow hull always covers its own footprint (it's the convex
-    // hull of the footprint and its shifted copy), so a tree can never
-    // register sun on itself in this model — exclude it from its own
-    // obstacle list while still shading it with every other obstacle.
-    const obstacles = obstacleShapes.filter((s) => s.id !== target.id).map(toObstacle);
-    const hours = computeSunHours(grid, obstacles, origin);
-    grid.forEach((p, i) => points.push({ lat: p.lat, lng: p.lng, hours: hours[i] }));
-    shapeAverages[target.id] = hours.length
-      ? hours.reduce((sum, h) => sum + h, 0) / hours.length
-      : 0;
-  }
-
-  return { points, shapeAverages };
 }

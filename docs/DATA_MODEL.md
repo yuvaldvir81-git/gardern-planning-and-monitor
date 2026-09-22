@@ -73,8 +73,9 @@ holds every drawn shape, `on delete cascade` on `garden_id`.
 | column | notes |
 |---|---|
 | `garden_shapes.type` | `garden_shape_type` enum: `boundary` \| `house` \| `tree` \| `vegetable_plot` \| `green_patch` |
-| `garden_shapes.points` | `jsonb`, `{lat, lng}[]` — polygon vertices (trees store a single center point instead) |
-| `garden_shapes.height_m` | nullable, `numeric(5,2)` — only meaningful for `house`/`tree`; feeds the shadow simulation |
+| `garden_shapes.color` | nullable `text`, hex string — overrides the type's default color when set |
+| `garden_shapes.points` | `jsonb`, `{lat, lng, heightM?}[]` — polygon vertices (trees store a single center point instead). A vertex's own `heightM` overrides `garden_shapes.height_m` for that one corner — used to model a sloped roof on a house; unset on every vertex behaves like a flat roof |
+| `garden_shapes.height_m` | nullable, `numeric(5,2)` — only meaningful for `house`/`tree`; feeds the shadow simulation, and is the fallback for any vertex without its own `heightM` |
 | `garden_shapes.radius_m` | nullable, `numeric(6,2)` — tree canopy radius, defaults to 1.5m if unset |
 
 Sun exposure results aren't persisted — they're computed on demand from the current

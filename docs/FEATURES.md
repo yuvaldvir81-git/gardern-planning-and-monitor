@@ -156,8 +156,15 @@ and creates a garden centered there. `/garden/[id]` is the map editor:
   drawing/editing handled by `@geoman-io/leaflet-geoman-free`.
 - Five shape types can be drawn: garden **boundary**, **house**, **tree**, **vegetable
   plot**, **green patch**. Each polygon (trees are a point + radius, rendered as a real
-  circle in meters, not a fixed pixel size) is saved with an optional label and, for
-  house/tree, a height in meters — height is what feeds the shadow simulation below.
+  circle in meters, not a fixed pixel size) is saved with an optional label, a custom
+  color (native color picker + presets, falling back to a per-type default), and, for
+  house/tree, a height in meters — height is what feeds the shadow simulation below. A
+  house can also have a **per-corner height** set (edit dialog → "Per-corner height"),
+  to model a sloped roof — the shadow calculation shifts each corner by its own shadow
+  length instead of one uniform length for the whole footprint, so a uniform height
+  across every corner (the default) behaves exactly like a flat roof, while different
+  corner heights naturally produce an asymmetric shadow reflecting the slope, without
+  needing full 3D roof-plane geometry.
 - **Sun exposure**: a "Compute sun exposure" action (requires a boundary to exist, as a
   sanity check that the garden is mapped out) samples points **within each tree canopy
   and vegetable plot only** — not the whole boundary, which usually also covers the

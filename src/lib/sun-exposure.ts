@@ -4,9 +4,13 @@ import * as turf from "@turf/turf";
 export type LatLng = { lat: number; lng: number };
 
 export type Obstacle = {
-  /** Footprint in lat/lng — a closed or open ring of vertices. */
-  points: LatLng[];
-  /** Height in meters. */
+  /**
+   * Footprint in lat/lng — a closed or open ring of vertices. A point's own
+   * heightM (e.g. a house corner on the low side of a sloped roof) overrides
+   * the obstacle's flat heightM below for that corner only.
+   */
+  points: (LatLng & { heightM?: number })[];
+  /** Height in meters, used for any point that doesn't specify its own. */
   heightM: number;
 };
 
@@ -44,33 +48,79 @@ export function buildSampleGrid(boundary: LatLng[], resolution = 12): LatLng[] {
   return points;
 }
 
-function shiftPolygonMeters(
-  footprintLocal: { x: number; y: number }[],
-  dx: number,
-  dy: number
+/**
+ * Andrew's monotone chain convex hull. Used instead of @turf/convex (which
+ * delegates to the `concaveman` package): concaveman reliably threw
+ * "TypeError: d is not a constructor" under Turbopack's production
+ * minifier — reproduced identically on a clean local `next build` and on
+ * Vercel, traced via the build's source map to concaveman's internals, not
+ * to our own code. Our inputs here are always small (a handful of points),
+ * so a self-contained hull avoids the dependency entirely rather than
+ * fighting whatever the minifier does to that package.
+ */
+function convexHull(
+  points: { x: number; y: number }[]
 ): { x: number; y: number }[] {
-  return footprintLocal.map((p) => ({ x: p.x + dx, y: p.y + dy }));
+  const sorted = [...points].sort((a, b) => a.x - b.x || a.y - b.y);
+  if (sorted.length <= 2) return sorted;
+
+  const cross = (
+    o: { x: number; y: number },
+    a: { x: number; y: number },
+    b: { x: number; y: number }
+  ) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+
+  const lower: { x: number; y: number }[] = [];
+  for (const p of sorted) {
+    while (
+      lower.length >= 2 &&
+      cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0
+    ) {
+      lower.pop();
+    }
+    lower.push(p);
+  }
+
+  const upper: { x: number; y: number }[] = [];
+  for (let i = sorted.length - 1; i >= 0; i--) {
+    const p = sorted[i];
+    while (
+      upper.length >= 2 &&
+      cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0
+    ) {
+      upper.pop();
+    }
+    upper.push(p);
+  }
+
+  lower.pop();
+  upper.pop();
+  return lower.concat(upper);
 }
 
 /**
- * The ground shadow of an extruded flat-topped obstacle isn't just its
- * footprint translated by the shadow vector — that's only the far tip. The
- * full shadow is the swept region connecting the base to the tip, which for
- * a convex footprint is the convex hull of the footprint and its translated
- * copy.
+ * The ground shadow of an extruded obstacle isn't just its footprint
+ * translated by the shadow vector — that's only the far tip. The full
+ * shadow is the swept region connecting the base to the tip, which for a
+ * convex footprint is the convex hull of the footprint and its shifted
+ * copy. Each point shifts by its own shadow length (from its own height),
+ * not one length for the whole footprint — a flat roof (every point the
+ * same height) reduces to the old uniform-shift behavior, while a sloped
+ * one (points at different heights, e.g. a house's eave vs. ridge corners)
+ * naturally produces a sheared, non-uniform shadow shape.
  */
 function shadowHull(
-  footprintLocal: { x: number; y: number }[],
-  dx: number,
-  dy: number
+  footprintLocal: { x: number; y: number; heightM: number }[],
+  altitudeRad: number,
+  shadowDirX: number,
+  shadowDirY: number
 ): { x: number; y: number }[] {
-  const translated = shiftPolygonMeters(footprintLocal, dx, dy);
-  const points = turf.featureCollection(
-    [...footprintLocal, ...translated].map((p) => turf.point([p.x, p.y]))
-  );
-  const hull = turf.convex(points);
-  if (!hull) return translated;
-  return hull.geometry.coordinates[0].map(([x, y]) => ({ x, y }));
+  const shifted = footprintLocal.map((p) => {
+    const length = p.heightM / Math.tan(altitudeRad);
+    return { x: p.x + length * shadowDirX, y: p.y + length * shadowDirY };
+  });
+  const base = footprintLocal.map(({ x, y }) => ({ x, y }));
+  return convexHull([...base, ...shifted]);
 }
 
 function pointInLocalPolygon(
@@ -94,8 +144,10 @@ export function computeSunHours(
   const localObstacles = obstacles
     .filter((o) => o.points.length >= 3 && o.heightM > 0)
     .map((o) => ({
-      footprint: o.points.map((p) => toLocalMeters(p, origin)),
-      heightM: o.heightM,
+      footprint: o.points.map((p) => ({
+        ...toLocalMeters(p, origin),
+        heightM: p.heightM ?? o.heightM,
+      })),
     }));
 
   const localPoints = samplePoints.map((p) => toLocalMeters(p, origin));
@@ -123,10 +175,10 @@ export function computeSunHours(
       const shadowDirX = Math.sin(shadowBearingRad);
       const shadowDirY = Math.cos(shadowBearingRad);
 
-      const shadowPolygons = localObstacles.map((o) => {
-        const length = o.heightM / Math.tan((altitude * Math.PI) / 180);
-        return shadowHull(o.footprint, length * shadowDirX, length * shadowDirY);
-      });
+      const altitudeRad = (altitude * Math.PI) / 180;
+      const shadowPolygons = localObstacles.map((o) =>
+        shadowHull(o.footprint, altitudeRad, shadowDirX, shadowDirY)
+      );
 
       for (let i = 0; i < localPoints.length; i++) {
         const inShadow = shadowPolygons.some((poly) => pointInLocalPolygon(localPoints[i], poly));
