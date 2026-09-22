@@ -205,7 +205,12 @@ export async function deleteShape(id: string, gardenId: string) {
   revalidatePath(`/garden/${gardenId}`);
 }
 
-export type SunGridResult = { lat: number; lng: number; hours: number }[];
+export type SunGridPoint = { lat: number; lng: number; hours: number };
+export type SunExposureResult = {
+  points: SunGridPoint[];
+  /** Average sun hours/day per shape id (only trees and vegetable plots). */
+  shapeAverages: Record<string, number>;
+};
 
 const DEFAULT_TREE_RADIUS_M = 1.5;
 
@@ -223,7 +228,7 @@ function circleToPolygon(center: { lat: number; lng: number }, radiusM: number):
   return points;
 }
 
-export async function computeGardenSunExposure(gardenId: string): Promise<SunGridResult> {
+export async function computeGardenSunExposure(gardenId: string): Promise<SunExposureResult> {
   const result = await getGardenWithShapes(gardenId);
   if (!result) throw new Error("Garden not found");
   const { garden, shapes } = result;
@@ -248,7 +253,8 @@ export async function computeGardenSunExposure(gardenId: string): Promise<SunGri
   // vegetable plots — rather than the whole boundary (which usually also
   // covers the house footprint, patios, and paths).
   const targets = shapes.filter((s) => s.type === "tree" || s.type === "vegetable_plot");
-  const results: SunGridResult = [];
+  const points: SunGridPoint[] = [];
+  const shapeAverages: Record<string, number> = {};
 
   for (const target of targets) {
     const targetPoints =
@@ -265,8 +271,11 @@ export async function computeGardenSunExposure(gardenId: string): Promise<SunGri
     // obstacle list while still shading it with every other obstacle.
     const obstacles = obstacleShapes.filter((s) => s.id !== target.id).map(toObstacle);
     const hours = computeSunHours(grid, obstacles, origin);
-    grid.forEach((p, i) => results.push({ lat: p.lat, lng: p.lng, hours: hours[i] }));
+    grid.forEach((p, i) => points.push({ lat: p.lat, lng: p.lng, hours: hours[i] }));
+    shapeAverages[target.id] = hours.length
+      ? hours.reduce((sum, h) => sum + h, 0) / hours.length
+      : 0;
   }
 
-  return results;
+  return { points, shapeAverages };
 }

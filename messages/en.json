@@ -352,6 +352,7 @@
     "sunComputeError": "Couldn't compute sun exposure — draw a boundary first",
     "hideSun": "Hide sun exposure",
     "sunHoursLegend": "Avg. sun hours/day (yearly)",
+    "sunHoursValue": "{hours}h",
     "toastShapeAdded": "Shape added",
     "toastShapeUpdated": "Shape updated",
     "toastShapeDeleted": "Shape removed",

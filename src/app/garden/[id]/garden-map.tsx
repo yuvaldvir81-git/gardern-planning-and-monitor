@@ -51,7 +51,7 @@ import {
   computeGardenSunExposure,
   updateGardenCoordinates,
   type ShapeType,
-  type SunGridResult,
+  type SunExposureResult,
 } from "../actions";
 import type { gardens, gardenShapes } from "@/db/schema";
 import { MapErrorBoundary } from "./map-error-boundary";
@@ -261,7 +261,7 @@ export function GardenMap({
   const [heightInput, setHeightInput] = useState("");
   const [radiusInput, setRadiusInput] = useState(String(DEFAULT_TREE_RADIUS_M));
   const [isSaving, setIsSaving] = useState(false);
-  const [sunGrid, setSunGrid] = useState<SunGridResult | null>(null);
+  const [sunResult, setSunResult] = useState<SunExposureResult | null>(null);
   const [isComputingSun, setIsComputingSun] = useState(false);
   const [editingShape, setEditingShape] = useState<Shape | null>(null);
   const [editLabelInput, setEditLabelInput] = useState("");
@@ -438,7 +438,7 @@ export function GardenMap({
     setIsComputingSun(true);
     try {
       const result = await computeGardenSunExposure(garden.id);
-      setSunGrid(result);
+      setSunResult(result);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("sunComputeError"));
     } finally {
@@ -530,7 +530,7 @@ export function GardenMap({
                 />
               ))}
 
-            {sunGrid?.map((cell, i) => (
+            {sunResult?.points.map((cell, i) => (
               <CircleMarker
                 key={i}
                 center={[cell.lat, cell.lng]}
@@ -685,6 +685,7 @@ export function GardenMap({
                 <ul className="space-y-2">
                   {shapes.map((shape) => {
                     const hidden = hiddenShapeIds.has(shape.id);
+                    const sunHours = sunResult?.shapeAverages[shape.id];
                     return (
                       <li key={shape.id} className="space-y-1 text-sm">
                         <div className="flex items-center justify-between">
@@ -696,6 +697,14 @@ export function GardenMap({
                             <span className={hidden ? "text-muted-foreground" : ""}>
                               {shape.label || shapeLabels[shape.type]}
                             </span>
+                            {sunHours !== undefined && (
+                              <span
+                                className="text-xs font-medium"
+                                style={{ color: sunHoursColor(sunHours) }}
+                              >
+                                {t("sunHoursValue", { hours: sunHours.toFixed(1) })}
+                              </span>
+                            )}
                           </span>
                           <span className="flex items-center gap-0.5">
                             <Button
@@ -774,12 +783,12 @@ export function GardenMap({
               )}
               {isComputingSun ? t("computingSun") : t("computeSun")}
             </Button>
-            {sunGrid && (
+            {sunResult && (
               <>
                 <Button
                   variant="ghost"
                   className="w-full"
-                  onClick={() => setSunGrid(null)}
+                  onClick={() => setSunResult(null)}
                 >
                   {t("hideSun")}
                 </Button>

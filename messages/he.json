@@ -352,6 +352,7 @@
     "sunComputeError": "לא ניתן לחשב חשיפה לשמש — ציירו קודם גבול",
     "hideSun": "הסתרת חשיפה לשמש",
     "sunHoursLegend": "ממוצע שעות שמש ליום (שנתי)",
+    "sunHoursValue": "{hours} שעות",
     "toastShapeAdded": "הצורה נוספה",
     "toastShapeUpdated": "הצורה עודכנה",
     "toastShapeDeleted": "הצורה הוסרה",
