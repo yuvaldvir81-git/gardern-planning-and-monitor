@@ -119,7 +119,8 @@
     "overdue": "באיחור {days} ימים",
     "readyToday": "מוכן היום",
     "readyIn": "מוכן בעוד {days} ימים",
-    "readyInRange": "מוכן בעוד {min}–{max} ימים"
+    "readyInRange": "מוכן בעוד {min}–{max} ימים",
+    "showMore": "הצגת {count} נוספים"
   },
   "trayDetail": {
     "summary": "מגש {rows} × {cols} — {count, plural, one {שתיל #} other {# שתילים}}",

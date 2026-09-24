@@ -37,6 +37,8 @@ function ReadyBadge({
   return <span className="text-xs text-muted-foreground">{label}</span>;
 }
 
+const PAGE_SIZE = 10;
+
 export function ReplantOrderWidget({
   initialEntries,
 }: {
@@ -45,17 +47,20 @@ export function ReplantOrderWidget({
   const t = useTranslations("replantWidget");
   const [entries, setEntries] = useState(initialEntries);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   async function handleRecalculate() {
     setIsRefreshing(true);
     try {
       setEntries(await getReplantSchedule());
+      setVisibleCount(PAGE_SIZE);
     } finally {
       setIsRefreshing(false);
     }
   }
 
   if (entries.length === 0) return null;
+  const visibleEntries = entries.slice(0, visibleCount);
 
   return (
     <Card className="mb-8">
@@ -77,7 +82,7 @@ export function ReplantOrderWidget({
       </CardHeader>
       <CardContent>
         <ul className="divide-y">
-          {entries.map((entry) => (
+          {visibleEntries.map((entry) => (
             <li
               key={entry.starterId}
               className="flex items-center justify-between gap-3 py-2 text-sm"
@@ -105,6 +110,16 @@ export function ReplantOrderWidget({
             </li>
           ))}
         </ul>
+        {visibleCount < entries.length && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mt-2 w-full"
+            onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+          >
+            {t("showMore", { count: entries.length - visibleCount })}
+          </Button>
+        )}
       </CardContent>
     </Card>
   );

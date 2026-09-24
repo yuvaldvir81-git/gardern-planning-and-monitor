@@ -119,7 +119,8 @@
     "overdue": "Overdue {days}d",
     "readyToday": "Ready today",
     "readyIn": "Ready in {days}d",
-    "readyInRange": "Ready in {min}–{max}d"
+    "readyInRange": "Ready in {min}–{max}d",
+    "showMore": "Show {count} more"
   },
   "trayDetail": {
     "summary": "{rows} × {cols} tray — {count, plural, one {# starter} other {# starters}}",
