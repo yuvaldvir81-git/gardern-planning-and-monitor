@@ -189,13 +189,17 @@ function EditableShapeLayer({
   editMode,
   opacity,
   resetKey,
+  showPointNumbers,
   onGeometryChange,
+  onSelect,
 }: {
   shape: Shape;
   editMode: boolean;
   opacity: number;
   resetKey: number;
+  showPointNumbers: boolean;
   onGeometryChange: (id: string, points: { lat: number; lng: number }[]) => void;
+  onSelect: (id: string) => void;
 }) {
   const layerRef = useRef<L.Polygon | L.Circle | null>(null);
 
@@ -227,6 +231,7 @@ function EditableShapeLayer({
     "pm:dragend": handleChange,
     "pm:edit": handleChange,
     "pm:markerdragend": handleChange,
+    click: () => onSelect(shape.id),
   };
 
   if (shape.type === "tree") {
@@ -258,6 +263,7 @@ function EditableShapeLayer({
         eventHandlers={eventHandlers}
       />
       {shape.type === "house" &&
+        showPointNumbers &&
         shape.points.map((p, i) => (
           <CircleMarker
             key={i}
@@ -313,6 +319,7 @@ export function GardenMap({
   >({});
   const [isSavingShapes, setIsSavingShapes] = useState(false);
   const [resetKey, setResetKey] = useState(0);
+  const [selectedHouseId, setSelectedHouseId] = useState<string | null>(null);
   const [isUploadingOverlay, setIsUploadingOverlay] = useState(false);
   const [overlayBounds, setOverlayBounds] = useState<OverlayBounds | null>(
     garden.overlayBounds
@@ -526,6 +533,7 @@ export function GardenMap({
     setEditHeightInput(shape.heightM ?? "");
     setEditRadiusInput(shape.radiusM ?? String(DEFAULT_TREE_RADIUS_M));
     setEditPointHeights(shape.points.map((p) => (p.heightM != null ? String(p.heightM) : "")));
+    if (shape.type === "house") setSelectedHouseId(shape.id);
   }
 
   async function confirmEditShape() {
@@ -690,7 +698,9 @@ export function GardenMap({
                   editMode={editPositionsMode}
                   opacity={getOpacity(shape)}
                   resetKey={resetKey}
+                  showPointNumbers={shape.id === selectedHouseId}
                   onGeometryChange={handleGeometryChange}
+                  onSelect={setSelectedHouseId}
                 />
               ))}
 
