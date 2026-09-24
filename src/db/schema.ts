@@ -122,6 +122,15 @@ export const gardens = pgTable("gardens", {
   addressLabel: text("address_label"),
   lat: numeric("lat", { precision: 9, scale: 6 }).notNull(),
   lng: numeric("lng", { precision: 9, scale: 6 }).notNull(),
+  /** Uploaded plan/blueprint image (Vercel Blob URL), overlaid on the map. */
+  overlayImageUrl: text("overlay_image_url"),
+  /** Rectangular, axis-aligned fit for the overlay image — opposite corners in lat/lng. */
+  overlayBounds: jsonb("overlay_bounds").$type<{
+    sw: { lat: number; lng: number };
+    ne: { lat: number; lng: number };
+  } | null>(),
+  /** 0-1. Defaults to a partly-transparent value so satellite imagery stays visible underneath while aligning. */
+  overlayOpacity: numeric("overlay_opacity", { precision: 3, scale: 2 }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

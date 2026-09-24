@@ -372,7 +372,17 @@
     "toastShapesRepositioned": "מיקומי הצורות עודכנו",
     "showShapeAriaLabel": "הצגת צורה",
     "hideShapeAriaLabel": "הסתרת צורה",
-    "opacity": "שקיפות"
+    "opacity": "שקיפות",
+    "overlayTitle": "תמונת תוכנית",
+    "uploadOverlay": "העלאת תמונת תוכנית",
+    "replaceOverlay": "החלפת תמונת תוכנית",
+    "overlayHint": "גררו את שתי נקודות האחיזה הכתומות בפינות כדי להתאים את התמונה למפה.",
+    "saveOverlay": "שמירת ההתאמה",
+    "removeOverlay": "הסרת התמונה",
+    "toastOverlayAdded": "תמונת התוכנית נוספה",
+    "toastOverlayUpdated": "התאמת תמונת התוכנית עודכנה",
+    "toastOverlayRemoved": "תמונת התוכנית הוסרה",
+    "toastOverlayError": "לא ניתן היה לעדכן את תמונת התוכנית"
   },
   "settings": {
     "backToStarters": "חזרה לשתילים",

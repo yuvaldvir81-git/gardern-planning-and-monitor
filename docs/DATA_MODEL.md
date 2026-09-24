@@ -72,6 +72,9 @@ holds every drawn shape, `on delete cascade` on `garden_id`.
 
 | column | notes |
 |---|---|
+| `gardens.overlay_image_url` | nullable `text` — Vercel Blob URL of an uploaded plan/blueprint image |
+| `gardens.overlay_bounds` | nullable `jsonb`, `{sw: {lat,lng}, ne: {lat,lng}}` — the overlay's axis-aligned fit rectangle |
+| `gardens.overlay_opacity` | nullable `numeric(3,2)`, 0–1 |
 | `garden_shapes.type` | `garden_shape_type` enum: `boundary` \| `house` \| `tree` \| `vegetable_plot` \| `green_patch` |
 | `garden_shapes.color` | nullable `text`, hex string — overrides the type's default color when set |
 | `garden_shapes.points` | `jsonb`, `{lat, lng, heightM?}[]` — polygon vertices (trees store a single center point instead). A vertex's own `heightM` overrides `garden_shapes.height_m` for that one corner — used to model a sloped roof on a house; unset on every vertex behaves like a flat roof |

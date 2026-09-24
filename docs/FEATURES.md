@@ -186,6 +186,15 @@ and creates a garden centered there. `/garden/[id]` is the map editor:
   point, rendered as a colored dot overlay (green = full sun, through yellow, to blue =
   shade).
 - Deleting a garden cascades to its shapes.
+- **Plan image overlay**: a garden can have one uploaded reference image (a house/garden
+  plan or blueprint) fitted onto the map as a georeferenced `ImageOverlay`. Fitting is a
+  simple axis-aligned rectangle — two draggable corner handles (south-west, north-east)
+  set the image's bounds; there's no rotation/skew support, so this works best when the
+  source plan is already roughly north-up. An opacity slider keeps the satellite imagery
+  visible underneath while aligning. Uploads reuse the same Vercel Blob flow as seed
+  package photos (`/api/upload`); the fit (bounds + opacity) doesn't save until "Save
+  fit" is clicked, matching the pattern used for repositioning shapes and the address
+  pin.
 
 ## Auth & hosting
 

@@ -372,7 +372,17 @@
     "toastShapesRepositioned": "Shape positions updated",
     "showShapeAriaLabel": "Show shape",
     "hideShapeAriaLabel": "Hide shape",
-    "opacity": "Opacity"
+    "opacity": "Opacity",
+    "overlayTitle": "Plan image",
+    "uploadOverlay": "Upload plan image",
+    "replaceOverlay": "Replace plan image",
+    "overlayHint": "Drag the two orange corner handles to fit the image onto the map.",
+    "saveOverlay": "Save fit",
+    "removeOverlay": "Remove image",
+    "toastOverlayAdded": "Plan image added",
+    "toastOverlayUpdated": "Plan image fit updated",
+    "toastOverlayRemoved": "Plan image removed",
+    "toastOverlayError": "Couldn't update the plan image"
   },
   "settings": {
     "backToStarters": "Back to starters",

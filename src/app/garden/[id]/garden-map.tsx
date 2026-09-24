@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
+import { upload } from "@vercel/blob/client";
 import L from "leaflet";
 // CSS is imported globally in src/app/layout.tsx instead of here — see the
 // comment there for why (production-only blank map on a lazily loaded chunk).
@@ -16,6 +17,8 @@ import {
   Polygon,
   Circle,
   CircleMarker,
+  Tooltip,
+  ImageOverlay,
   useMap,
 } from "react-leaflet";
 import {
@@ -30,6 +33,7 @@ import {
   Move,
   Eye,
   EyeOff,
+  ImagePlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,8 +54,12 @@ import {
   deleteShape,
   computeGardenSunExposure,
   updateGardenCoordinates,
+  setGardenOverlayImage,
+  updateGardenOverlay,
+  removeGardenOverlay,
   type ShapeType,
   type SunExposureResult,
+  type OverlayBounds,
 } from "../actions";
 import type { gardens, gardenShapes } from "@/db/schema";
 import { MapErrorBoundary } from "./map-error-boundary";
@@ -68,6 +76,13 @@ L.Icon.Default.mergeOptions({
 
 type Garden = typeof gardens.$inferSelect;
 type Shape = typeof gardenShapes.$inferSelect;
+
+const overlayCornerIcon = L.divIcon({
+  className: "",
+  html: '<div style="width:16px;height:16px;border-radius:9999px;background:#f59e0b;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.3)"></div>',
+  iconSize: [16, 16],
+  iconAnchor: [8, 8],
+});
 
 const SHAPE_COLORS: Record<ShapeType, string> = {
   boundary: "#94a3b8",
@@ -230,18 +245,32 @@ function EditableShapeLayer({
   }
 
   return (
-    <Polygon
-      key={`${shape.id}-${resetKey}`}
-      ref={layerRef as React.RefObject<L.Polygon>}
-      positions={shape.points.map((p) => [p.lat, p.lng])}
-      pathOptions={{
-        color,
-        fillColor: color,
-        fillOpacity: opacity,
-        dashArray: shape.type === "boundary" ? "6 6" : undefined,
-      }}
-      eventHandlers={eventHandlers}
-    />
+    <Fragment key={`${shape.id}-${resetKey}`}>
+      <Polygon
+        ref={layerRef as React.RefObject<L.Polygon>}
+        positions={shape.points.map((p) => [p.lat, p.lng])}
+        pathOptions={{
+          color,
+          fillColor: color,
+          fillOpacity: opacity,
+          dashArray: shape.type === "boundary" ? "6 6" : undefined,
+        }}
+        eventHandlers={eventHandlers}
+      />
+      {shape.type === "house" &&
+        shape.points.map((p, i) => (
+          <CircleMarker
+            key={i}
+            center={[p.lat, p.lng]}
+            radius={9}
+            pathOptions={{ color: "#fff", fillColor: color, fillOpacity: 1, weight: 2 }}
+          >
+            <Tooltip permanent direction="center" opacity={1} className="point-number-tooltip">
+              {i + 1}
+            </Tooltip>
+          </CircleMarker>
+        ))}
+    </Fragment>
   );
 }
 
@@ -255,6 +284,7 @@ export function GardenMap({
   const t = useTranslations("garden");
   const router = useRouter();
   const mapRef = useRef<L.Map | null>(null);
+  const overlayFileInputRef = useRef<HTMLInputElement>(null);
   const [pendingShape, setPendingShape] = useState<PendingShape | null>(null);
   const [labelInput, setLabelInput] = useState("");
   const [colorInput, setColorInput] = useState("");
@@ -283,6 +313,94 @@ export function GardenMap({
   >({});
   const [isSavingShapes, setIsSavingShapes] = useState(false);
   const [resetKey, setResetKey] = useState(0);
+  const [isUploadingOverlay, setIsUploadingOverlay] = useState(false);
+  const [overlayBounds, setOverlayBounds] = useState<OverlayBounds | null>(
+    garden.overlayBounds
+  );
+  const [overlayOpacityValue, setOverlayOpacityValue] = useState(
+    garden.overlayOpacity != null ? Number(garden.overlayOpacity) : 0.7
+  );
+  const [isSavingOverlay, setIsSavingOverlay] = useState(false);
+  const overlayMoved =
+    overlayBounds !== null &&
+    garden.overlayBounds !== null &&
+    (overlayBounds.sw.lat !== garden.overlayBounds?.sw.lat ||
+      overlayBounds.sw.lng !== garden.overlayBounds?.sw.lng ||
+      overlayBounds.ne.lat !== garden.overlayBounds?.ne.lat ||
+      overlayBounds.ne.lng !== garden.overlayBounds?.ne.lng ||
+      overlayOpacityValue !== Number(garden.overlayOpacity ?? 0.7));
+
+  function defaultOverlayBounds(center: { lat: number; lng: number }): OverlayBounds {
+    const metersPerDegLat = 111_320;
+    const metersPerDegLng = 111_320 * Math.cos((center.lat * Math.PI) / 180);
+    const halfSize = 10;
+    return {
+      sw: {
+        lat: center.lat - halfSize / metersPerDegLat,
+        lng: center.lng - halfSize / metersPerDegLng,
+      },
+      ne: {
+        lat: center.lat + halfSize / metersPerDegLat,
+        lng: center.lng + halfSize / metersPerDegLng,
+      },
+    };
+  }
+
+  async function handleUploadOverlay(file: File) {
+    setIsUploadingOverlay(true);
+    try {
+      const blob = await upload(`garden-plans/${Date.now()}-${file.name}`, file, {
+        access: "public",
+        handleUploadUrl: "/api/upload",
+      });
+      const bounds = defaultOverlayBounds({
+        lat: Number(garden.lat),
+        lng: Number(garden.lng),
+      });
+      await setGardenOverlayImage(garden.id, blob.url, bounds);
+      setOverlayBounds(bounds);
+      setOverlayOpacityValue(0.7);
+      toast.success(t("toastOverlayAdded"));
+      router.refresh();
+    } catch {
+      toast.error(t("toastOverlayError"));
+    } finally {
+      setIsUploadingOverlay(false);
+    }
+  }
+
+  async function handleSaveOverlay() {
+    if (!overlayBounds) return;
+    setIsSavingOverlay(true);
+    try {
+      await updateGardenOverlay(garden.id, {
+        bounds: overlayBounds,
+        opacity: overlayOpacityValue,
+      });
+      toast.success(t("toastOverlayUpdated"));
+      router.refresh();
+    } catch {
+      toast.error(t("toastOverlayError"));
+    } finally {
+      setIsSavingOverlay(false);
+    }
+  }
+
+  function handleCancelOverlay() {
+    setOverlayBounds(garden.overlayBounds);
+    setOverlayOpacityValue(garden.overlayOpacity != null ? Number(garden.overlayOpacity) : 0.7);
+  }
+
+  async function handleRemoveOverlay() {
+    try {
+      await removeGardenOverlay(garden.id);
+      setOverlayBounds(null);
+      toast.success(t("toastOverlayRemoved"));
+      router.refresh();
+    } catch {
+      toast.error(t("toastOverlayError"));
+    }
+  }
 
   function defaultOpacity(type: ShapeType) {
     if (type === "boundary") return 0;
@@ -528,6 +646,41 @@ export function GardenMap({
               }}
             />
 
+            {overlayBounds && garden.overlayImageUrl && (
+              <Fragment key={garden.overlayImageUrl}>
+                <ImageOverlay
+                  url={garden.overlayImageUrl}
+                  bounds={[
+                    [overlayBounds.sw.lat, overlayBounds.sw.lng],
+                    [overlayBounds.ne.lat, overlayBounds.ne.lng],
+                  ]}
+                  opacity={overlayOpacityValue}
+                />
+                <Marker
+                  position={[overlayBounds.sw.lat, overlayBounds.sw.lng]}
+                  draggable
+                  icon={overlayCornerIcon}
+                  eventHandlers={{
+                    dragend: (e) => {
+                      const { lat, lng } = (e.target as L.Marker).getLatLng();
+                      setOverlayBounds((prev) => (prev ? { ...prev, sw: { lat, lng } } : prev));
+                    },
+                  }}
+                />
+                <Marker
+                  position={[overlayBounds.ne.lat, overlayBounds.ne.lng]}
+                  draggable
+                  icon={overlayCornerIcon}
+                  eventHandlers={{
+                    dragend: (e) => {
+                      const { lat, lng } = (e.target as L.Marker).getLatLng();
+                      setOverlayBounds((prev) => (prev ? { ...prev, ne: { lat, lng } } : prev));
+                    },
+                  }}
+                />
+              </Fragment>
+            )}
+
             {shapes
               .filter((shape) => !hiddenShapeIds.has(shape.id))
               .map((shape) => (
@@ -590,6 +743,89 @@ export function GardenMap({
             </CardContent>
           </Card>
         )}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">{t("overlayTitle")}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <input
+              ref={overlayFileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              disabled={isUploadingOverlay}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (file) handleUploadOverlay(file);
+              }}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              disabled={isUploadingOverlay}
+              onClick={() => overlayFileInputRef.current?.click()}
+            >
+              {isUploadingOverlay ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <ImagePlus className="h-4 w-4" />
+              )}
+              {garden.overlayImageUrl ? t("replaceOverlay") : t("uploadOverlay")}
+            </Button>
+            {garden.overlayImageUrl && overlayBounds && (
+              <>
+                <p className="text-xs text-muted-foreground">{t("overlayHint")}</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">{t("opacity")}</span>
+                  <Slider
+                    value={[Math.round(overlayOpacityValue * 100)]}
+                    min={0}
+                    max={100}
+                    step={5}
+                    onValueChange={(value) => {
+                      const percent = Array.isArray(value) ? value[0] : value;
+                      setOverlayOpacityValue(percent / 100);
+                    }}
+                    className="flex-1"
+                  />
+                </div>
+                {overlayMoved && (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={handleCancelOverlay}
+                      disabled={isSavingOverlay}
+                    >
+                      {t("cancel")}
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="flex-1"
+                      onClick={handleSaveOverlay}
+                      disabled={isSavingOverlay}
+                    >
+                      {isSavingOverlay && <Loader2 className="h-4 w-4 animate-spin" />}
+                      {t("saveOverlay")}
+                    </Button>
+                  </div>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-destructive"
+                  onClick={handleRemoveOverlay}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  {t("removeOverlay")}
+                </Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">{t("shapesTitle")}</CardTitle>

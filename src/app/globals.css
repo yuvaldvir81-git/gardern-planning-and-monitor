@@ -128,3 +128,22 @@
     @apply font-sans;
   }
 }
+
+/*
+  Plain CSS, not Tailwind utilities — Leaflet's Tooltip markup isn't
+  something Tailwind's class scanner sees, and given this session's history
+  of Tailwind utilities silently not applying in the production build,
+  anything Leaflet-specific goes here as literal rules instead.
+*/
+.point-number-tooltip {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 0;
+}
+.point-number-tooltip::before {
+  display: none;
+}

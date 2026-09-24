@@ -112,6 +112,50 @@ export async function updateGardenCoordinates(id: string, lat: number, lng: numb
   revalidatePath(`/garden/${id}`);
 }
 
+export type OverlayBounds = { sw: { lat: number; lng: number }; ne: { lat: number; lng: number } };
+
+export async function setGardenOverlayImage(id: string, imageUrl: string, bounds: OverlayBounds) {
+  const userId = await requireUserId();
+  const db = getDb();
+  await db
+    .update(gardens)
+    .set({
+      overlayImageUrl: imageUrl,
+      overlayBounds: bounds,
+      overlayOpacity: "0.7",
+      updatedAt: new Date(),
+    })
+    .where(and(eq(gardens.id, id), eq(gardens.userId, userId)));
+  revalidatePath(`/garden/${id}`);
+}
+
+export async function updateGardenOverlay(
+  id: string,
+  values: { bounds?: OverlayBounds; opacity?: number }
+) {
+  const userId = await requireUserId();
+  const db = getDb();
+  await db
+    .update(gardens)
+    .set({
+      ...(values.bounds !== undefined ? { overlayBounds: values.bounds } : {}),
+      ...(values.opacity !== undefined ? { overlayOpacity: String(values.opacity) } : {}),
+      updatedAt: new Date(),
+    })
+    .where(and(eq(gardens.id, id), eq(gardens.userId, userId)));
+  revalidatePath(`/garden/${id}`);
+}
+
+export async function removeGardenOverlay(id: string) {
+  const userId = await requireUserId();
+  const db = getDb();
+  await db
+    .update(gardens)
+    .set({ overlayImageUrl: null, overlayBounds: null, overlayOpacity: null, updatedAt: new Date() })
+    .where(and(eq(gardens.id, id), eq(gardens.userId, userId)));
+  revalidatePath(`/garden/${id}`);
+}
+
 export async function deleteGarden(id: string) {
   const userId = await requireUserId();
   const db = getDb();
