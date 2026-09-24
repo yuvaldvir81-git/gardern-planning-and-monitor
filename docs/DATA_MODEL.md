@@ -46,6 +46,7 @@ hand on `/starters/seeds` (see
 | column | intent |
 |---|---|
 | `days_to_germinate_min` / `_max` | expected germination window |
+| `days_to_transplant_min` / `_max` | days from *planting* (not germination) until typically ready to move out of a tray — feeds the [replant order widget](./FEATURES.md#replant-order-widget) |
 | `days_to_maturity` | days from planting to harvest |
 | `sun_requirement` | free text, e.g. "full sun" |
 | `spacing_cm` | recommended spacing |

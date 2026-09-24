@@ -82,6 +82,8 @@ const optionalPositiveInt = z
 export const seedTypeMetadataFormSchema = z.object({
   daysToGerminateMin: optionalPositiveInt,
   daysToGerminateMax: optionalPositiveInt,
+  daysToTransplantMin: optionalPositiveInt,
+  daysToTransplantMax: optionalPositiveInt,
   daysToMaturity: optionalPositiveInt,
   sunRequirement: z.string().trim().max(120).optional().or(z.literal("")),
   spacingCm: z

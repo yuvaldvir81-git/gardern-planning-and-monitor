@@ -110,6 +110,17 @@
     "heading": "Trays",
     "summary": "{rows} × {cols} — {count, plural, one {# starter} other {# starters}}"
   },
+  "replantWidget": {
+    "title": "Replant order",
+    "recalculateAriaLabel": "Recalculate replant order",
+    "standalone": "Standalone",
+    "trayPosition": "{tray} · r{row}, c{col}",
+    "noData": "No transplant data",
+    "overdue": "Overdue {days}d",
+    "readyToday": "Ready today",
+    "readyIn": "Ready in {days}d",
+    "readyInRange": "Ready in {min}–{max}d"
+  },
   "trayDetail": {
     "summary": "{rows} × {cols} tray — {count, plural, one {# starter} other {# starters}}",
     "editAriaLabel": "Edit tray",
@@ -195,6 +206,7 @@
     "emptyDescription": "Names you use for starters and tray cells collect here automatically.",
     "colName": "Name",
     "colGerminate": "Germinate",
+    "colTransplant": "Transplant",
     "colMaturity": "Maturity",
     "colSun": "Sun",
     "colSpacing": "Spacing",
@@ -212,6 +224,8 @@
     "description": "Edit growing metadata for this seed type.",
     "germinateMin": "Germinate — min days",
     "germinateMax": "Germinate — max days",
+    "transplantMin": "Ready to transplant — min days",
+    "transplantMax": "Ready to transplant — max days",
     "daysToMaturity": "Days to maturity",
     "spacingCm": "Spacing (cm)",
     "sunRequirement": "Sun requirement",

@@ -5,14 +5,17 @@ import { UserButton } from "@clerk/nextjs";
 import { getStartersForUser } from "./actions";
 import { getTraysForUser } from "./trays/actions";
 import { getSeedTypeMetadataMap } from "./seed-types/actions";
+import { getReplantSchedule } from "./replant-schedule-actions";
 import { StartersTable } from "./starters-table";
 import { TraysSection } from "./trays-section";
+import { ReplantOrderWidget } from "./replant-order-widget";
 
 export default async function StartersPage() {
-  const [starters, trays, metadataByName, t, tGarden] = await Promise.all([
+  const [starters, trays, metadataByName, replantSchedule, t, tGarden] = await Promise.all([
     getStartersForUser(),
     getTraysForUser(),
     getSeedTypeMetadataMap(),
+    getReplantSchedule(),
     getTranslations("nav"),
     getTranslations("garden"),
   ]);
@@ -46,6 +49,7 @@ export default async function StartersPage() {
           <UserButton />
         </div>
       </div>
+      <ReplantOrderWidget initialEntries={replantSchedule} />
       <TraysSection trays={trays} metadataByName={metadataByName} />
       <StartersTable starters={starters} />
     </div>

@@ -110,6 +110,17 @@
     "heading": "מגשים",
     "summary": "{rows} × {cols} — {count, plural, one {שתיל #} other {# שתילים}}"
   },
+  "replantWidget": {
+    "title": "סדר השתלה",
+    "recalculateAriaLabel": "חישוב מחדש של סדר ההשתלה",
+    "standalone": "ללא מגש",
+    "trayPosition": "{tray} · שורה {row}, עמודה {col}",
+    "noData": "אין נתוני שתילה",
+    "overdue": "באיחור {days} ימים",
+    "readyToday": "מוכן היום",
+    "readyIn": "מוכן בעוד {days} ימים",
+    "readyInRange": "מוכן בעוד {min}–{max} ימים"
+  },
   "trayDetail": {
     "summary": "מגש {rows} × {cols} — {count, plural, one {שתיל #} other {# שתילים}}",
     "editAriaLabel": "עריכת מגש",
@@ -195,6 +206,7 @@
     "emptyDescription": "שמות שבהם אתם משתמשים עבור שתילים ותאי מגש נאספים כאן אוטומטית.",
     "colName": "שם",
     "colGerminate": "נביטה",
+    "colTransplant": "שתילה",
     "colMaturity": "הבשלה",
     "colSun": "שמש",
     "colSpacing": "מרווח",
@@ -212,6 +224,8 @@
     "description": "ערכו את מידע הגידול עבור סוג הזרע הזה.",
     "germinateMin": "נביטה — מספר ימים מינימלי",
     "germinateMax": "נביטה — מספר ימים מקסימלי",
+    "transplantMin": "מוכן לשתילה — מספר ימים מינימלי",
+    "transplantMax": "מוכן לשתילה — מספר ימים מקסימלי",
     "daysToMaturity": "ימים עד להבשלה",
     "spacingCm": "מרווח (ס״מ)",
     "sunRequirement": "דרישת שמש",

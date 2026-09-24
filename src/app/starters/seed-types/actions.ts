@@ -45,6 +45,8 @@ export async function getSeedTypeMetadataMap(): Promise<Record<string, SeedMetad
       name: seedTypes.name,
       daysToGerminateMin: seedTypes.daysToGerminateMin,
       daysToGerminateMax: seedTypes.daysToGerminateMax,
+      daysToTransplantMin: seedTypes.daysToTransplantMin,
+      daysToTransplantMax: seedTypes.daysToTransplantMax,
       daysToMaturity: seedTypes.daysToMaturity,
       sunRequirement: seedTypes.sunRequirement,
       spacingCm: seedTypes.spacingCm,
@@ -79,6 +81,22 @@ const generatedMetadataSchema = z.object({
     .positive()
     .nullable()
     .describe("Typical maximum days to germination, or null if unknown"),
+  daysToTransplantMin: z
+    .number()
+    .int()
+    .positive()
+    .nullable()
+    .describe(
+      "Typical minimum days from planting (not from germination) until the seedling is ready to transplant out of a tray/pot into its final growing spot, or null if unknown"
+    ),
+  daysToTransplantMax: z
+    .number()
+    .int()
+    .positive()
+    .nullable()
+    .describe(
+      "Typical maximum days from planting until the seedling is ready to transplant, or null if unknown"
+    ),
   daysToMaturity: z
     .number()
     .int()
@@ -120,6 +138,8 @@ async function applyGeneratedMetadata(id: string, data: z.infer<typeof generated
     .set({
       daysToGerminateMin: data.daysToGerminateMin,
       daysToGerminateMax: data.daysToGerminateMax,
+      daysToTransplantMin: data.daysToTransplantMin,
+      daysToTransplantMax: data.daysToTransplantMax,
       daysToMaturity: data.daysToMaturity,
       sunRequirement: data.sunRequirement,
       spacingCm: data.spacingCm !== null ? String(data.spacingCm) : null,
@@ -181,6 +201,8 @@ export async function updateSeedTypeMetadata(id: string, values: SeedTypeMetadat
     .set({
       daysToGerminateMin: data.daysToGerminateMin ? Number(data.daysToGerminateMin) : null,
       daysToGerminateMax: data.daysToGerminateMax ? Number(data.daysToGerminateMax) : null,
+      daysToTransplantMin: data.daysToTransplantMin ? Number(data.daysToTransplantMin) : null,
+      daysToTransplantMax: data.daysToTransplantMax ? Number(data.daysToTransplantMax) : null,
       daysToMaturity: data.daysToMaturity ? Number(data.daysToMaturity) : null,
       sunRequirement: data.sunRequirement || null,
       spacingCm: data.spacingCm || null,

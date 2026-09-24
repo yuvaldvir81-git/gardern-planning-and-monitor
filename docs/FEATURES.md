@@ -96,7 +96,8 @@ pattern as the AI Gateway).
 ## Seed metadata agent
 
 `/starters/seeds` lists the seed bank with its metadata columns (germination days
-range, days to maturity, sun requirement, spacing, notes). Each row has a Generate/
+range, days to ready-to-transplant range, days to maturity, sun requirement, spacing,
+notes). Each row has a Generate/
 Regenerate action (sparkle icon) that calls `anthropic/claude-sonnet-5` through the
 Vercel AI Gateway with a Zod-validated structured-output schema
 (`generatedMetadataSchema` in
@@ -112,6 +113,23 @@ including manual edits.
 Auth to the AI Gateway is automatic — Vercel injects an OIDC token for deployed
 functions, and `vercel env pull` already pulled `VERCEL_OIDC_TOKEN` into `.env.local`
 for local dev, so no separate `AI_GATEWAY_API_KEY` was needed.
+
+## Replant order widget
+
+`/starters` shows a "Replant order" card (above the tray grid) listing every
+not-yet-transplanted starter (status `seed`/`germinating`/`seedling`), soonest-to-move
+first — see [`src/app/starters/replant-schedule-actions.ts`](../src/app/starters/replant-schedule-actions.ts).
+Readiness is `date_planted + seed_types.days_to_transplant_min/max`, so it depends on
+that seed type having transplant-timing metadata generated (same AI agent as
+germination/maturity, above) — starters whose seed type has no data sort to the bottom
+labeled "No transplant data" rather than being hidden. A row shows "Overdue Nd", "Ready
+today", or "Ready in Nd" (a range if min/max differ).
+
+This is computed live on every page load and on the widget's manual refresh button
+(recalculates, no page reload) — deliberately **not** cached or cron-scheduled: unlike
+the AI metadata generation above, this is just date arithmetic over already-fetched
+rows, so it's already as cheap as a cache lookup would be, and computing it live means
+it can never go stale between scheduled runs.
 
 ## Language (English / Hebrew)
 

@@ -21,7 +21,7 @@ import {
   updateSeedTypeMetadata,
 } from "../seed-types/actions";
 import { SeedTypeEditDialog } from "./seed-type-edit-dialog";
-import { formatGerminationRange } from "@/lib/seed-metadata";
+import { formatGerminationRange, formatTransplantRange } from "@/lib/seed-metadata";
 import type { seedTypes } from "@/db/schema";
 
 type SeedType = typeof seedTypes.$inferSelect;
@@ -93,6 +93,7 @@ export function SeedBankTable({ seedTypes }: { seedTypes: SeedType[] }) {
               <TableRow>
                 <TableHead>{t("colName")}</TableHead>
                 <TableHead>{t("colGerminate")}</TableHead>
+                <TableHead>{t("colTransplant")}</TableHead>
                 <TableHead>{t("colMaturity")}</TableHead>
                 <TableHead>{t("colSun")}</TableHead>
                 <TableHead>{t("colSpacing")}</TableHead>
@@ -105,6 +106,9 @@ export function SeedBankTable({ seedTypes }: { seedTypes: SeedType[] }) {
                   <TableCell className="font-medium">{seedType.name}</TableCell>
                   <TableCell className="text-muted-foreground">
                     {formatGerminationRange(seedType) ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {formatTransplantRange(seedType) ?? "—"}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {seedType.daysToMaturity ? `${seedType.daysToMaturity}d` : "—"}

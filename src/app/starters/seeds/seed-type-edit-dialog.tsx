@@ -45,6 +45,8 @@ export function SeedTypeEditDialog({
     defaultValues: {
       daysToGerminateMin: seedType.daysToGerminateMin?.toString() ?? "",
       daysToGerminateMax: seedType.daysToGerminateMax?.toString() ?? "",
+      daysToTransplantMin: seedType.daysToTransplantMin?.toString() ?? "",
+      daysToTransplantMax: seedType.daysToTransplantMax?.toString() ?? "",
       daysToMaturity: seedType.daysToMaturity?.toString() ?? "",
       sunRequirement: seedType.sunRequirement ?? "",
       spacingCm: seedType.spacingCm ?? "",
@@ -98,6 +100,30 @@ export function SeedTypeEditDialog({
               />
               {errors.daysToGerminateMax && (
                 <p className="text-sm text-destructive">{errors.daysToGerminateMax.message}</p>
+              )}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="daysToTransplantMin">{t("transplantMin")}</Label>
+              <Input
+                id="daysToTransplantMin"
+                type="number"
+                {...register("daysToTransplantMin")}
+              />
+              {errors.daysToTransplantMin && (
+                <p className="text-sm text-destructive">{errors.daysToTransplantMin.message}</p>
+              )}
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="daysToTransplantMax">{t("transplantMax")}</Label>
+              <Input
+                id="daysToTransplantMax"
+                type="number"
+                {...register("daysToTransplantMax")}
+              />
+              {errors.daysToTransplantMax && (
+                <p className="text-sm text-destructive">{errors.daysToTransplantMax.message}</p>
               )}
             </div>
           </div>

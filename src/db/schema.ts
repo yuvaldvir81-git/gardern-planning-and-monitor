@@ -72,6 +72,9 @@ export const seedTypes = pgTable(
     name: text("name").notNull(),
     daysToGerminateMin: integer("days_to_germinate_min"),
     daysToGerminateMax: integer("days_to_germinate_max"),
+    /** Days from planting (not from germination) until a seedling is typically ready to transplant out of a tray. */
+    daysToTransplantMin: integer("days_to_transplant_min"),
+    daysToTransplantMax: integer("days_to_transplant_max"),
     daysToMaturity: integer("days_to_maturity"),
     sunRequirement: text("sun_requirement"),
     spacingCm: numeric("spacing_cm", { precision: 6, scale: 2 }),
