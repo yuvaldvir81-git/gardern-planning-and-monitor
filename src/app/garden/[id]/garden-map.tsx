@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -185,6 +185,16 @@ type PmLayer = L.Layer & {
   };
 };
 
+type ShapeGeometry = { points: { lat: number; lng: number }[]; radiusM?: number };
+
+function measureLabelIcon(text: string) {
+  return L.divIcon({
+    className: "measure-label",
+    html: `<span>${text}</span>`,
+    iconSize: [0, 0],
+  });
+}
+
 function EditableShapeLayer({
   shape,
   editMode,
@@ -199,10 +209,22 @@ function EditableShapeLayer({
   opacity: number;
   resetKey: number;
   showPointNumbers: boolean;
-  onGeometryChange: (id: string, points: { lat: number; lng: number }[]) => void;
+  onGeometryChange: (id: string, geometry: ShapeGeometry) => void;
   onSelect: (id: string) => void;
 }) {
+  const t = useTranslations("garden");
   const layerRef = useRef<L.Polygon | L.Circle | null>(null);
+  // Memoized so re-renders don't hand react-leaflet a new array, which would
+  // make it call setLatLngs and snap a shape back mid-edit.
+  const positions = useMemo(
+    () => shape.points.map((p) => [p.lat, p.lng] as [number, number]),
+    [shape.points]
+  );
+  // Geometry as the user drags it, used for the live length labels. Tagged
+  // with what it was measured from so a reset or refresh discards it.
+  const [live, setLive] = useState<
+    (ShapeGeometry & { resetKey: number; source: Shape["points"] }) | null
+  >(null);
 
   useEffect(() => {
     const layer = layerRef.current as PmLayer | null;
@@ -214,21 +236,39 @@ function EditableShapeLayer({
       layer.pm.disable();
       layer.pm.disableLayerDrag();
     }
-  }, [editMode]);
+  }, [editMode, resetKey]);
+
+  function readGeometry(): ShapeGeometry | null {
+    const layer = layerRef.current;
+    if (!layer) return null;
+    if (shape.type === "tree") {
+      const circle = layer as L.Circle;
+      const center = circle.getLatLng();
+      return { points: [{ lat: center.lat, lng: center.lng }], radiusM: circle.getRadius() };
+    }
+    return { points: extractPolygonPoints(layer as L.Layer) };
+  }
+
+  function handleLiveChange() {
+    const geometry = readGeometry();
+    if (geometry) setLive({ ...geometry, resetKey, source: shape.points });
+  }
 
   function handleChange() {
-    const layer = layerRef.current;
-    if (!layer) return;
-    if (shape.type === "tree") {
-      const center = (layer as L.Circle).getLatLng();
-      onGeometryChange(shape.id, [{ lat: center.lat, lng: center.lng }]);
-    } else {
-      onGeometryChange(shape.id, extractPolygonPoints(layer as L.Layer));
-    }
+    const geometry = readGeometry();
+    if (!geometry) return;
+    setLive({ ...geometry, resetKey, source: shape.points });
+    onGeometryChange(shape.id, geometry);
   }
+
+  const current =
+    live && live.resetKey === resetKey && live.source === shape.points ? live : null;
+  const displayPoints = current?.points ?? shape.points;
 
   const color = getShapeColor(shape);
   const eventHandlers = {
+    "pm:drag": handleLiveChange,
+    "pm:markerdrag": handleLiveChange,
     "pm:dragend": handleChange,
     "pm:edit": handleChange,
     "pm:markerdragend": handleChange,
@@ -236,17 +276,26 @@ function EditableShapeLayer({
   };
 
   if (shape.type === "tree") {
-    const center = shape.points[0];
-    const radius = shape.radiusM ? Number(shape.radiusM) : DEFAULT_TREE_RADIUS_M;
+    const radius =
+      current?.radiusM ?? (shape.radiusM ? Number(shape.radiusM) : DEFAULT_TREE_RADIUS_M);
+    const center = displayPoints[0];
     return (
-      <Circle
-        key={`${shape.id}-${resetKey}`}
-        ref={layerRef as React.RefObject<L.Circle>}
-        center={[center.lat, center.lng]}
-        radius={radius}
-        pathOptions={{ color, fillColor: color, fillOpacity: opacity }}
-        eventHandlers={eventHandlers}
-      />
+      <Fragment key={`${shape.id}-${resetKey}`}>
+        <Circle
+          ref={layerRef as React.RefObject<L.Circle>}
+          center={positions[0]}
+          radius={shape.radiusM ? Number(shape.radiusM) : DEFAULT_TREE_RADIUS_M}
+          pathOptions={{ color, fillColor: color, fillOpacity: opacity }}
+          eventHandlers={eventHandlers}
+        />
+        {editMode && (
+          <Marker
+            position={[center.lat, center.lng]}
+            interactive={false}
+            icon={measureLabelIcon(t("radiusMeters", { value: radius.toFixed(1) }))}
+          />
+        )}
+      </Fragment>
     );
   }
 
@@ -254,7 +303,7 @@ function EditableShapeLayer({
     <Fragment key={`${shape.id}-${resetKey}`}>
       <Polygon
         ref={layerRef as React.RefObject<L.Polygon>}
-        positions={shape.points.map((p) => [p.lat, p.lng])}
+        positions={positions}
         pathOptions={{
           color,
           fillColor: color,
@@ -263,9 +312,22 @@ function EditableShapeLayer({
         }}
         eventHandlers={eventHandlers}
       />
+      {editMode &&
+        displayPoints.map((p, i) => {
+          const next = displayPoints[(i + 1) % displayPoints.length];
+          const meters = L.latLng(p.lat, p.lng).distanceTo(L.latLng(next.lat, next.lng));
+          return (
+            <Marker
+              key={`len-${i}`}
+              position={[(p.lat + next.lat) / 2, (p.lng + next.lng) / 2]}
+              interactive={false}
+              icon={measureLabelIcon(t("lengthMeters", { value: meters.toFixed(1) }))}
+            />
+          );
+        })}
       {shape.type === "house" &&
         showPointNumbers &&
-        shape.points.map((p, i) => (
+        displayPoints.map((p, i) => (
           <CircleMarker
             key={i}
             center={[p.lat, p.lng]}
@@ -315,9 +377,7 @@ export function GardenMap({
   const [hiddenShapeIds, setHiddenShapeIds] = useState<Set<string>>(new Set());
   const [shapeOpacity, setShapeOpacity] = useState<Record<string, number>>({});
   const [editPositionsMode, setEditPositionsMode] = useState(false);
-  const [shapeOverrides, setShapeOverrides] = useState<
-    Record<string, { lat: number; lng: number }[]>
-  >({});
+  const [shapeOverrides, setShapeOverrides] = useState<Record<string, ShapeGeometry>>({});
   const [isSavingShapes, setIsSavingShapes] = useState(false);
   const [resetKey, setResetKey] = useState(0);
   const [selectedHouseId, setSelectedHouseId] = useState<string | null>(null);
@@ -429,15 +489,33 @@ export function GardenMap({
     });
   }
 
-  function handleGeometryChange(id: string, points: { lat: number; lng: number }[]) {
-    setShapeOverrides((prev) => ({ ...prev, [id]: points }));
+  function handleGeometryChange(id: string, geometry: ShapeGeometry) {
+    setShapeOverrides((prev) => ({ ...prev, [id]: geometry }));
+  }
+
+  // Keep per-corner roof heights across a reshape: by index when the corner
+  // count is unchanged, otherwise only for corners that weren't moved.
+  function withPointHeights(id: string, points: { lat: number; lng: number }[]) {
+    const original = shapes.find((s) => s.id === id)?.points ?? [];
+    return points.map((p, i) => {
+      const match =
+        original.length === points.length
+          ? original[i]
+          : original.find((o) => o.lat === p.lat && o.lng === p.lng);
+      return match?.heightM != null ? { ...p, heightM: match.heightM } : p;
+    });
   }
 
   async function handleSaveShapePositions() {
     setIsSavingShapes(true);
     try {
       await Promise.all(
-        Object.entries(shapeOverrides).map(([id, points]) => updateShape(id, { points }))
+        Object.entries(shapeOverrides).map(([id, { points, radiusM }]) =>
+          updateShape(id, {
+            points: withPointHeights(id, points),
+            ...(radiusM !== undefined ? { radiusM: Math.round(radiusM * 10) / 10 } : {}),
+          })
+        )
       );
       toast.success(t("toastShapesRepositioned"));
       setShapeOverrides({});

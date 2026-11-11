@@ -144,6 +144,19 @@
   font-weight: 700;
   padding: 0;
 }
+.measure-label span {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.9);
+  color: #1c1917;
+  border-radius: 4px;
+  padding: 1px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
+}
 .point-number-tooltip::before {
   display: none;
 }
