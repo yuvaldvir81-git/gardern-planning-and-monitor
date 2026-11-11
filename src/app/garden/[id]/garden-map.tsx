@@ -30,7 +30,8 @@ import {
   Square,
   Loader2,
   Pencil,
-  Move,
+  Hand,
+  X,
   Eye,
   EyeOff,
   ImagePlus,
@@ -469,6 +470,16 @@ export function GardenMap({
     }
   }
 
+  function startEditPositions() {
+    // Turn off any draw tool still active, so map clicks don't keep adding shapes.
+    const map = mapRef.current;
+    if (map) {
+      map.pm.disableDraw();
+      delete (map as L.Map & { _pendingShapeType?: ShapeType })._pendingShapeType;
+    }
+    setEditPositionsMode(true);
+  }
+
   function startDraw(type: ShapeType) {
     const map = mapRef.current;
     if (!map) return;
@@ -895,10 +906,10 @@ export function GardenMap({
                 onClick={() =>
                   editPositionsMode
                     ? handleCancelShapePositions()
-                    : setEditPositionsMode(true)
+                    : startEditPositions()
                 }
               >
-                <Move className="h-4 w-4" />
+                {editPositionsMode ? <X className="h-4 w-4" /> : <Hand className="h-4 w-4" />}
                 {editPositionsMode ? t("stopEditingPositions") : t("editPositions")}
               </Button>
             </div>
