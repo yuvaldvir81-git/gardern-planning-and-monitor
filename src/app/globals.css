@@ -144,9 +144,14 @@
   font-weight: 700;
   padding: 0;
 }
+/* Explicit left/top so the anchor doesn't depend on text direction (in RTL an
+   unpositioned absolute box hangs off the right edge instead). */
 .shape-label span {
   position: absolute;
-  transform: translate(-50%, -50%);
+  left: 0;
+  top: 0;
+  /* Centered horizontally, sitting just above the shape's center. */
+  transform: translate(-50%, calc(-100% - 4px));
   pointer-events: none;
   background: rgba(255, 255, 255, 0.85);
   border-radius: 4px;
@@ -160,6 +165,8 @@
 }
 .measure-label span {
   position: absolute;
+  left: 0;
+  top: 0;
   transform: translate(-50%, -50%);
   white-space: nowrap;
   pointer-events: none;
