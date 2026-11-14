@@ -187,6 +187,33 @@ type PmLayer = L.Layer & {
 
 type ShapeGeometry = { points: { lat: number; lng: number }[]; radiusM?: number };
 
+function escapeHtml(text: string) {
+  return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+}
+
+// Area centroid of a polygon, falling back to the vertex average for
+// degenerate (near-zero-area) shapes. Planar math is fine at garden scale.
+function polygonCentroid(points: { lat: number; lng: number }[]) {
+  let area = 0;
+  let lat = 0;
+  let lng = 0;
+  for (let i = 0; i < points.length; i++) {
+    const a = points[i];
+    const b = points[(i + 1) % points.length];
+    const cross = a.lng * b.lat - b.lng * a.lat;
+    area += cross;
+    lng += (a.lng + b.lng) * cross;
+    lat += (a.lat + b.lat) * cross;
+  }
+  if (Math.abs(area) < 1e-14) {
+    return {
+      lat: points.reduce((s, p) => s + p.lat, 0) / points.length,
+      lng: points.reduce((s, p) => s + p.lng, 0) / points.length,
+    };
+  }
+  return { lat: lat / (3 * area), lng: lng / (3 * area) };
+}
+
 function measureLabelIcon(text: string) {
   return L.divIcon({
     className: "measure-label",
@@ -268,6 +295,27 @@ function EditableShapeLayer({
     live && live.resetKey === resetKey && live.source === shape.points ? live : null;
   const displayPoints = current?.points ?? shape.points;
 
+  const labelIcon = useMemo(
+    () =>
+      labelText
+        ? L.divIcon({
+            className: "shape-label",
+            html: `<span>${escapeHtml(labelText)}</span>`,
+            iconSize: [0, 0],
+          })
+        : null,
+    [labelText]
+  );
+  const labelCenter =
+    shape.type === "tree" ? displayPoints[0] : polygonCentroid(displayPoints);
+  const labelMarker = labelIcon && (
+    <Marker
+      position={[labelCenter.lat, labelCenter.lng]}
+      interactive={false}
+      icon={labelIcon}
+    />
+  );
+
   const color = getShapeColor(shape);
   const eventHandlers = {
     "pm:drag": handleLiveChange,
@@ -290,13 +338,8 @@ function EditableShapeLayer({
           radius={shape.radiusM ? Number(shape.radiusM) : DEFAULT_TREE_RADIUS_M}
           pathOptions={{ color, fillColor: color, fillOpacity: opacity }}
           eventHandlers={eventHandlers}
-        >
-          {labelText && (
-            <Tooltip permanent direction="center" opacity={1} className="shape-label">
-              {labelText}
-            </Tooltip>
-          )}
-        </Circle>
+        />
+        {labelMarker}
         {editMode && (
           <Marker
             position={[center.lat, center.lng]}
@@ -320,13 +363,8 @@ function EditableShapeLayer({
           dashArray: shape.type === "boundary" ? "6 6" : undefined,
         }}
         eventHandlers={eventHandlers}
-      >
-        {labelText && (
-          <Tooltip permanent direction="center" opacity={1} className="shape-label">
-            {labelText}
-          </Tooltip>
-        )}
-      </Polygon>
+      />
+      {labelMarker}
       {editMode &&
         displayPoints.map((p, i) => {
           const next = displayPoints[(i + 1) % displayPoints.length];
