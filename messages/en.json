@@ -383,6 +383,7 @@
     "editPositions": "Edit positions",
     "stopEditingPositions": "Stop editing positions",
     "editPositionsHint": "Drag a shape to move it, drag its corner points to reshape it, or drag a tree's edge to resize it. Side lengths are shown in meters.",
+    "mapLabels": "Labels on map",
     "lengthMeters": "{value} m",
     "radiusMeters": "r {value} m",
     "savePositions": "Save positions",

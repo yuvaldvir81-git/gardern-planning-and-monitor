@@ -383,6 +383,7 @@
     "editPositions": "עריכת מיקומים",
     "stopEditingPositions": "הפסקת עריכת מיקומים",
     "editPositionsHint": "גררו צורה כדי להזיז אותה, גררו את נקודות הפינה שלה כדי לשנות את צורתה, או גררו את קצה העץ כדי לשנות את גודלו. אורכי הצלעות מוצגים במטרים.",
+    "mapLabels": "תוויות על המפה",
     "lengthMeters": "{value} מ׳",
     "radiusMeters": "רדיוס {value} מ׳",
     "savePositions": "שמירת מיקומים",

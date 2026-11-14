@@ -201,6 +201,7 @@ function EditableShapeLayer({
   opacity,
   resetKey,
   showPointNumbers,
+  labelText,
   onGeometryChange,
   onSelect,
 }: {
@@ -209,6 +210,8 @@ function EditableShapeLayer({
   opacity: number;
   resetKey: number;
   showPointNumbers: boolean;
+  /** Name shown on the map at the shape's center; null hides it. */
+  labelText: string | null;
   onGeometryChange: (id: string, geometry: ShapeGeometry) => void;
   onSelect: (id: string) => void;
 }) {
@@ -287,7 +290,13 @@ function EditableShapeLayer({
           radius={shape.radiusM ? Number(shape.radiusM) : DEFAULT_TREE_RADIUS_M}
           pathOptions={{ color, fillColor: color, fillOpacity: opacity }}
           eventHandlers={eventHandlers}
-        />
+        >
+          {labelText && (
+            <Tooltip permanent direction="center" opacity={1} className="shape-label">
+              {labelText}
+            </Tooltip>
+          )}
+        </Circle>
         {editMode && (
           <Marker
             position={[center.lat, center.lng]}
@@ -311,7 +320,13 @@ function EditableShapeLayer({
           dashArray: shape.type === "boundary" ? "6 6" : undefined,
         }}
         eventHandlers={eventHandlers}
-      />
+      >
+        {labelText && (
+          <Tooltip permanent direction="center" opacity={1} className="shape-label">
+            {labelText}
+          </Tooltip>
+        )}
+      </Polygon>
       {editMode &&
         displayPoints.map((p, i) => {
           const next = displayPoints[(i + 1) % displayPoints.length];
@@ -376,6 +391,7 @@ export function GardenMap({
     markerPosition[0] !== savedPosition[0] || markerPosition[1] !== savedPosition[1];
   const [hiddenShapeIds, setHiddenShapeIds] = useState<Set<string>>(new Set());
   const [shapeOpacity, setShapeOpacity] = useState<Record<string, number>>({});
+  const [hiddenLabelTypes, setHiddenLabelTypes] = useState<Set<ShapeType>>(new Set());
   const [editPositionsMode, setEditPositionsMode] = useState(false);
   const [shapeOverrides, setShapeOverrides] = useState<Record<string, ShapeGeometry>>({});
   const [isSavingShapes, setIsSavingShapes] = useState(false);
@@ -478,6 +494,15 @@ export function GardenMap({
 
   function getOpacity(shape: Shape) {
     return shapeOpacity[shape.id] ?? defaultOpacity(shape.type);
+  }
+
+  function toggleLabelType(type: ShapeType) {
+    setHiddenLabelTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) next.delete(type);
+      else next.add(type);
+      return next;
+    });
   }
 
   function toggleVisibility(id: string) {
@@ -696,9 +721,15 @@ export function GardenMap({
       <style>{`
         .garden-map-layout { grid-template-columns: 1fr; }
         .garden-map-container { height: 60vh; }
+        .garden-map-shapes-list { max-height: 50vh; }
         @media (min-width: 1024px) {
           .garden-map-layout { grid-template-columns: 1fr 20rem; }
           .garden-map-container { height: 75vh; }
+          /* Sidebar matches the map; the shapes card takes the leftover space
+             and scrolls its list, keeping at least 16rem for it. */
+          .garden-map-sidebar { height: 75vh; overflow-y: auto; }
+          .garden-map-shapes-card { flex: 1 1 0; min-height: 16rem; }
+          .garden-map-shapes-list { max-height: none; }
         }
       `}</style>
       <MapErrorBoundary>
@@ -788,6 +819,11 @@ export function GardenMap({
                   opacity={getOpacity(shape)}
                   resetKey={resetKey}
                   showPointNumbers={shape.id === selectedHouseId}
+                  labelText={
+                    hiddenLabelTypes.has(shape.type)
+                      ? null
+                      : shape.label || shapeLabels[shape.type]
+                  }
                   onGeometryChange={handleGeometryChange}
                   onSelect={setSelectedHouseId}
                 />
@@ -810,7 +846,7 @@ export function GardenMap({
         </div>
       </MapErrorBoundary>
 
-      <div className="space-y-4">
+      <div className="garden-map-sidebar flex flex-col gap-4 *:shrink-0">
         {positionMoved && (
           <Card>
             <CardContent className="space-y-2 pt-4">
@@ -925,11 +961,11 @@ export function GardenMap({
             )}
           </CardContent>
         </Card>
-        <Card>
+        <Card className="garden-map-shapes-card">
           <CardHeader>
             <CardTitle className="text-sm">{t("shapesTitle")}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="flex min-h-0 flex-1 flex-col space-y-2">
             <div className="grid grid-cols-2 gap-2">
               <Button
                 variant="outline"
@@ -1024,7 +1060,29 @@ export function GardenMap({
               </div>
             )}
 
-            <div className="border-t pt-2">
+            <div className="space-y-1.5 border-t pt-2">
+              <p className="text-xs text-muted-foreground">{t("mapLabels")}</p>
+              <div className="flex flex-wrap gap-1">
+                {(Object.keys(shapeLabels) as ShapeType[]).map((type) => {
+                  const shown = !hiddenLabelTypes.has(type);
+                  return (
+                    <Button
+                      key={type}
+                      variant={shown ? "secondary" : "outline"}
+                      size="xs"
+                      aria-pressed={shown}
+                      className={shown ? "" : "text-muted-foreground"}
+                      onClick={() => toggleLabelType(type)}
+                    >
+                      {shown ? <Eye /> : <EyeOff />}
+                      {shapeLabels[type]}
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="garden-map-shapes-list min-h-0 flex-1 overflow-y-auto border-t pt-2">
               {shapes.length === 0 ? (
                 <p className="text-xs text-muted-foreground">{t("noShapes")}</p>
               ) : (
